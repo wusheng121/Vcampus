@@ -1,13 +1,16 @@
 package client.net;
 
 import common.net.Message;
+
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class ClientSocket {
     private String serverHost = "127.0.0.1";
-    private int serverPort = 5000; // 服务器监听端口
+    //192.168.72.250
+    //127.0.0.1
+    private int serverPort = 8888; // 服务器监听端口
 
     public Message sendRequest(Message request) throws Exception {
         try (Socket socket = new Socket(serverHost, serverPort)) {
