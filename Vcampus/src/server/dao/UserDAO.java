@@ -4,16 +4,27 @@ import common.model.User;
 import java.util.List;
 
 public interface UserDAO {
-    // 根据用户ID查找用户
+    // 根据用户ID查找
     User findUserById(String userId);
 
-    // 添加新用户（由管理员添加）
+    // 添加用户
     boolean addUser(User user);
 
-    // 修改用户密码
+    // 修改用户信息（不含密码）
+    boolean updateUser(User user);
+
+    // 修改密码
     boolean updatePassword(String userId, String newPassword);
 
-    // 可选：查询所有用户
-    List<User> findAllUsers();
-}
+    // 删除用户
+    boolean deleteUser(String userId);
 
+    // 查询所有用户
+    List<User> findAllUsers();
+
+    // 模糊搜索（按ID/姓名/邮箱）
+    List<User> searchUsers(String keyword);
+
+    // 按角色筛选
+    List<User> findUsersByRole(String role);
+}

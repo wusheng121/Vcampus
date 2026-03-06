@@ -5,7 +5,7 @@ import java.net.Socket;
 
 public class ServerMain {
     public static void main(String[] args) {
-        int port = 5000; // 与客户端一致
+        int port = 8888; // 与客户端一致
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("服务器启动，监听端口: " + port);
             while (true) {

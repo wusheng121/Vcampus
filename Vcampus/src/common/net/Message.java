@@ -7,6 +7,7 @@ public class Message implements Serializable {
 
     private String type;   // 消息类型，例如 "login"
     private Object data;   // 消息体，可放User对象或Map
+    private Object extra;  // 额外数据（用于传递用户信息等）
     private String status; // 可选，返回状态
     private String msg;    // 可选，返回提示
 
@@ -59,6 +60,9 @@ public class Message implements Serializable {
     public void setMsg(String msg) {
         this.msg = msg;
     }
+
+    public Object getExtra() { return extra; }
+    public void setExtra(Object extra) { this.extra = extra; }
 
     @Override
     public String toString() {
