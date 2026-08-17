@@ -5,6 +5,7 @@ import common.model.Lesson;
 import common.model.LessonTime;
 
 import java.util.List;
+import java.util.Map;
 
 public interface CourseDAO {
     // ---- course ----
@@ -14,9 +15,14 @@ public interface CourseDAO {
     // ---- lesson ----
     List<Lesson> listLessons();             // 列出所有开课（后续可加过滤条件）
     Lesson getLessonById(int lessonId);
-    
+
     // ---- lesson_time ----
     List<LessonTime> listLessonTimes(int lessonId);
+    /** 批量：一次返回全部 lesson_time 行（按 lessonId 分组由调用方处理） */
+    List<LessonTime> listAllLessonTimes();
+
+    /** 批量：返回所有 lesson 的已选人数（lessonId -> count，status=enrolled） */
+    Map<Integer, Integer> countEnrolledForAll();
 
     int addCourse(Course course);          // 返回生成的 courseId（失败返回 -1）
     boolean updateCourse(Course course);   // 根据 courseId 更新

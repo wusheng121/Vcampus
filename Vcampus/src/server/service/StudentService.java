@@ -3,10 +3,11 @@ import common.model.Student;
 import common.model.StudentPersonal;
 import common.model.StudentPersonalAudit;
 import server.dao.StudentDAO;
+import server.dao.StudentDAOImpl;
 import java.util.ArrayList;
 import java.util.List;
 public class StudentService {
-private final StudentDAO dao = new StudentDAO();
+private final StudentDAO dao = new StudentDAOImpl();
 public List<Student> getAllStudents() {
     return dao.findAll();
 }

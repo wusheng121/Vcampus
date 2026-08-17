@@ -5,6 +5,7 @@ import client.controller.ProductController;
 import common.model.Product;
 import common.model.ProductCategory;
 import common.model.User;
+import util.EmptyState;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -19,6 +20,7 @@ public class ProductManagementPanel extends JPanel {
     private final ProductController productController;
     private final OrderController orderController;
     private JTable productTable;
+    private JScrollPane tableScrollPane;
     private DefaultTableModel tableModel;
     private Map<String, String> categoryNameToIdMap = new HashMap<>();
 
@@ -85,7 +87,8 @@ public class ProductManagementPanel extends JPanel {
             }
         };
         productTable = new JTable(tableModel);
-        return new JScrollPane(productTable);
+        tableScrollPane = new JScrollPane(productTable);
+        return tableScrollPane;
     }
 
     private JPanel createActionPanel() {
@@ -145,6 +148,7 @@ public class ProductManagementPanel extends JPanel {
                 });
             }
         }
+        EmptyState.updateEmptyState(tableScrollPane, productTable, "暂无商品");
     }
 
     private String getCategoryNameById(String categoryId) {

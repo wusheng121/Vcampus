@@ -1,4 +1,6 @@
 package client.ui;
+import util.EmptyState;
+import util.UITheme;
 
 import client.controller.BorrowRecordController;
 import common.model.BorrowRecord;
@@ -12,6 +14,7 @@ import java.util.List;
 public class BorrowRecordsPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable table;
+    private JScrollPane tableScroll;
     private BorrowRecordController recordController = new BorrowRecordController();
 
     public BorrowRecordsPanel() {
@@ -21,12 +24,12 @@ public class BorrowRecordsPanel extends JPanel {
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField searchField = new JTextField(20);
         JButton searchBtn = new JButton("查询");
-        searchBtn.setBackground(new Color(70, 130, 180));
+        searchBtn.setBackground(UITheme.HEADER);
         searchBtn.setForeground(Color.WHITE);
         searchBtn.setFocusPainted(false);
         searchBtn.setOpaque(true);
         JButton refreshBtn = new JButton("刷新");
-        refreshBtn.setBackground(new Color(70, 130, 180));
+        refreshBtn.setBackground(UITheme.HEADER);
         refreshBtn.setForeground(Color.WHITE);
         refreshBtn.setFocusPainted(false);
         refreshBtn.setOpaque(true);
@@ -53,10 +56,10 @@ public class BorrowRecordsPanel extends JPanel {
         table.setRowHeight(30);
         table.getTableHeader().setReorderingAllowed(false);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180)); // 钢蓝色
+        header.setBackground(UITheme.HEADER); // 钢蓝色
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add((tableScroll = new JScrollPane(table)), BorderLayout.CENTER);
 
         // 加载数据
         refreshTable();
@@ -69,24 +72,6 @@ public class BorrowRecordsPanel extends JPanel {
 
         // 刷新功能
         refreshBtn.addActionListener(e -> refreshTable());
-
-//        // 删除按钮列
-//        new ButtonColumn(table, 8, e -> {
-//            int row = table.getSelectedRow();
-//            if (row >= 0) {
-//                int recordId = (int) tableModel.getValueAt(row, 0);
-//                int confirm = JOptionPane.showConfirmDialog(
-//                        null, "确认删除记录 ID=" + recordId + " ?", "确认", JOptionPane.YES_NO_OPTION);
-//                if (confirm == JOptionPane.YES_OPTION) {
-//                    if (recordController.deleteRecord(recordId)) {
-//                        JOptionPane.showMessageDialog(null, "删除成功");
-//                        refreshTable();
-//                    } else {
-//                        JOptionPane.showMessageDialog(null, "删除失败");
-//                    }
-//                }
-//            }
-//        });
     }
 
     // 默认刷新所有记录
@@ -117,5 +102,6 @@ public class BorrowRecordsPanel extends JPanel {
                 });
             }
         }
+        EmptyState.updateEmptyState(tableScroll, table, "暂无借阅记录");
     }
 }

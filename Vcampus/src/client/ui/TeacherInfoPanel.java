@@ -1,4 +1,5 @@
 package client.ui;
+import util.UITheme;
 
 import client.net.ClientSocket;
 import common.model.Teacher;
@@ -18,7 +19,7 @@ public class TeacherInfoPanel extends JPanel {
     private static final Color BG_GLOBAL   = new Color(0xFAFAFA);
     private static final Color BG_CARD     = new Color(0xFFFFFF);
     private static final Color BG_SUB      = new Color(0xF5F7FA);
-    private static final Color COLOR_THEME = new Color(0x3874F7);
+    private static final Color COLOR_THEME = UITheme.PRIMARY;
     private static final Color COLOR_GRAY  = new Color(0x8C8C8C);
 
     /* 只读文本框 */
@@ -248,7 +249,7 @@ public class TeacherInfoPanel extends JPanel {
         private boolean saveTeacher(Teacher teacher) {
             try {
                 Message req = new Message(MessageType.TEACHER_UPDATE, teacher);
-                Message resp = new ClientSocket().sendRequest(req);
+                Message resp = ClientSocket.getInstance().sendRequest(req);
                 return "success".equals(resp.getStatus());
             } catch (Exception ex) {
                 ex.printStackTrace();

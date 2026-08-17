@@ -1,4 +1,6 @@
 package client.ui;
+import util.EmptyState;
+import util.UITheme;
 
 import client.controller.BorrowRecordController;
 import common.model.BorrowRecord;
@@ -17,6 +19,7 @@ import java.util.stream.Collectors;
 public class CurrentBorrowPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable table;
+    private JScrollPane tableScroll;
     private BorrowRecordController recordController = new BorrowRecordController();
     private User user;
 
@@ -27,7 +30,7 @@ public class CurrentBorrowPanel extends JPanel {
         // ===== 顶部工具栏 =====
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton refreshBtn = new JButton("刷新");
-        refreshBtn.setBackground(new Color(70, 130, 180));
+        refreshBtn.setBackground(UITheme.HEADER);
         refreshBtn.setForeground(Color.WHITE);
         refreshBtn.setFocusPainted(false);
         refreshBtn.setOpaque(true);
@@ -49,14 +52,14 @@ public class CurrentBorrowPanel extends JPanel {
         table.setRowHeight(30);
         table.getTableHeader().setReorderingAllowed(false);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180)); // 钢蓝色
+        header.setBackground(UITheme.HEADER); // 钢蓝色
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add((tableScroll = new JScrollPane(table)), BorderLayout.CENTER);
 
         // ===== 操作列按钮 =====
-        table.getColumnModel().getColumn(6).setCellRenderer(new ButtonRenderer("还书", new Color(40, 167, 69), Color.WHITE));
-        table.getColumnModel().getColumn(6).setCellEditor(new ButtonEditor("还书", table, e -> onReturnBook(), new Color(40, 167, 69), Color.WHITE));
+        table.getColumnModel().getColumn(6).setCellRenderer(new ButtonRenderer("还书", UITheme.SUCCESS, Color.WHITE));
+        table.getColumnModel().getColumn(6).setCellEditor(new ButtonEditor("还书", table, e -> onReturnBook(), UITheme.SUCCESS, Color.WHITE));
 
         // 初始加载
         refreshTable();
@@ -93,6 +96,7 @@ public class CurrentBorrowPanel extends JPanel {
                     "还书"
             });
         }
+        EmptyState.updateEmptyState(tableScroll, table, "当前无在借图书");
     }
 
 

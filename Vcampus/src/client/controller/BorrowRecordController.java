@@ -1,4 +1,5 @@
 package client.controller;
+import common.net.MessageType;
 
 import client.net.ClientSocket;
 import common.model.BorrowRecord;
@@ -9,14 +10,14 @@ import java.util.List;
 
 public class BorrowRecordController {
 
-    private ClientSocket clientSocket = new ClientSocket();
+    private ClientSocket clientSocket = ClientSocket.getInstance();
 
     public boolean handleBorrow(String userId, String bookId) {
         try {
             BorrowRecord record = new BorrowRecord(userId, bookId);
 
             Message request = new Message();
-            request.setType("borrowBook");
+            request.setType(MessageType.BORROW_BOOK);
             request.setData(record);
 
             Message response = clientSocket.sendRequest(request);
@@ -34,7 +35,7 @@ public class BorrowRecordController {
             record.setReturnDate(LocalDateTime.now());
 
             Message request = new Message();
-            request.setType("returnBook");
+            request.setType(MessageType.RETURN_BOOK);
             request.setData(record);
 
             Message response = clientSocket.sendRequest(request);
@@ -49,7 +50,7 @@ public class BorrowRecordController {
     public List<BorrowRecord> getAllRecords() {
         try {
             Message request = new Message();
-            request.setType("getAllRecords");
+            request.setType(MessageType.GET_ALL_RECORDS);
             // data 可不传
             Message response = clientSocket.sendRequest(request);
             if (response != null && "success".equals(response.getStatus())) {
@@ -64,7 +65,7 @@ public class BorrowRecordController {
     public List<BorrowRecord> getUserRecords(String userId) {
         try {
             Message request = new Message();
-            request.setType("getUserRecords");
+            request.setType(MessageType.GET_USER_RECORDS);
             request.setData(userId);
             Message response = clientSocket.sendRequest(request);
             if (response != null && "success".equals(response.getStatus())) {
@@ -80,7 +81,7 @@ public class BorrowRecordController {
 //    public boolean updateRecord(BorrowRecord record) {
 //        try {
 //            Message request = new Message();
-//            request.setType("updateBorrowRecord");
+//            request.setType(MessageType.UPDATE_BORROW_RECORD);
 //            request.setData(record);
 //
 //            Message response = clientSocket.sendRequest(request);

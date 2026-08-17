@@ -1,4 +1,5 @@
 package client.controller;
+import common.net.MessageType;
 
 import client.net.ClientSocket;
 import common.model.*;
@@ -8,11 +9,11 @@ import java.util.Collections;
 import java.util.List;
 
 public class CourseController {
-    private final ClientSocket socket = new ClientSocket();
+    private final ClientSocket socket = ClientSocket.getInstance();
 
     public List<Teacher> listTeachers() {
         try {
-            Message req = new Message("listTeachers", null);
+            Message req = new Message(MessageType.LIST_TEACHERS, null);
             Message resp = socket.sendRequest(req);
             return (List<Teacher>) resp.getData();
         } catch(Exception e) {
@@ -22,7 +23,7 @@ public class CourseController {
     }
     public Teacher getTeacherById(String id) {
         try {
-            Message req = new Message("getTeacherById", id);
+            Message req = new Message(MessageType.GET_TEACHER_BY_ID, id);
             Message resp = socket.sendRequest(req);
             return (Teacher) resp.getData();
         } catch(Exception e) {
@@ -34,7 +35,7 @@ public class CourseController {
     
     public List<Lesson> listLessons() {
         try {
-            Message req = new Message("listLessons", null);
+            Message req = new Message(MessageType.LIST_LESSONS, null);
             Message resp = socket.sendRequest(req);
             return (List<Lesson>) resp.getData();            
         } catch(Exception e) {
@@ -46,7 +47,7 @@ public class CourseController {
 
     public List<LessonTime> listLessonTimes(int lessonId) {
         try {
-            Message req = new Message("listLessonTimes", lessonId);
+            Message req = new Message(MessageType.LIST_LESSON_TIMES, lessonId);
             Message resp = socket.sendRequest(req);
             return (List<LessonTime>) resp.getData();
         } catch(Exception e) {
@@ -54,10 +55,38 @@ public class CourseController {
             return Collections.emptyList();
         }
     }
+
+    /** 批量：一次返回全部上课时间，消除逐课 N+1。 */
+    @SuppressWarnings("unchecked")
+    public List<LessonTime> listAllLessonTimes() {
+        try {
+            Message req = new Message(MessageType.LIST_ALL_LESSON_TIMES, null);
+            Message resp = socket.sendRequest(req);
+            Object data = resp.getData();
+            return data instanceof List ? (List<LessonTime>) data : Collections.emptyList();
+        } catch(Exception e) {
+            e.printStackTrace();
+            return Collections.emptyList();
+        }
+    }
+
+    /** 批量：所有 lesson 的已选人数（lessonId -> count），消除逐课 N+1。 */
+    @SuppressWarnings("unchecked")
+    public java.util.Map<Integer, Integer> countEnrolledForAll() {
+        try {
+            Message req = new Message(MessageType.COUNT_ENROLLED_ALL, null);
+            Message resp = socket.sendRequest(req);
+            Object data = resp.getData();
+            return data instanceof java.util.Map ? (java.util.Map<Integer, Integer>) data : java.util.Collections.emptyMap();
+        } catch(Exception e) {
+            e.printStackTrace();
+            return java.util.Collections.emptyMap();
+        }
+    }
     
     public Course getCourseById(int courseId){
         try {
-            Message req = new Message("getCourseById", courseId);
+            Message req = new Message(MessageType.GET_COURSE_BY_ID, courseId);
             Message resp = socket.sendRequest(req);
             return (Course) resp.getData();
         } catch(Exception e) {
@@ -67,7 +96,7 @@ public class CourseController {
     }
     public Lesson getLessonById(int lessonId) {
         try {
-            Message req = new Message("getLessonById", lessonId);
+            Message req = new Message(MessageType.GET_LESSON_BY_ID, lessonId);
             Message resp = socket.sendRequest(req);
             return (Lesson) resp.getData();
         } catch(Exception e) {
@@ -77,7 +106,7 @@ public class CourseController {
     }
     public List<Course> listCourses() {
         try {
-            Message req = new Message("listCourses", null);
+            Message req = new Message(MessageType.LIST_COURSES, null);
             Message resp = socket.sendRequest(req);
             return (List<Course>) resp.getData();
         } catch(Exception e) {
@@ -88,7 +117,7 @@ public class CourseController {
     
     public Message enroll(String studentId, int lessonId) {
         try {
-            Message req = new Message("enroll", new Object[]{studentId, lessonId});
+            Message req = new Message(MessageType.ENROLL, new Object[]{studentId, lessonId});
             return socket.sendRequest(req);
         } catch(Exception e) {
             e.printStackTrace();
@@ -101,7 +130,7 @@ public class CourseController {
 
     public Message drop(String studentId, int lessonId) {
         try {
-        Message req = new Message("drop", new Object[]{studentId, lessonId});
+        Message req = new Message(MessageType.DROP, new Object[]{studentId, lessonId});
         return socket.sendRequest(req);
         } catch(Exception e) {
             e.printStackTrace();
@@ -114,7 +143,7 @@ public class CourseController {
 
     public List<Enrollment> listMyEnrollments(String studentId) {
         try {
-        Message req = new Message("listMyEnrollments", studentId);
+        Message req = new Message(MessageType.LIST_MY_ENROLLMENTS, studentId);
         Message resp = socket.sendRequest(req);
         return (List<Enrollment>) resp.getData();
         } catch(Exception e) {
@@ -126,7 +155,7 @@ public class CourseController {
     // ===== Course CRUD =====
     public Message createCourse(Course course) {
         try {
-            Message req = new Message("createCourse", course);
+            Message req = new Message(MessageType.CREATE_COURSE, course);
             Message resp = socket.sendRequest(req);
             if ("success".equalsIgnoreCase(String.valueOf(resp.getStatus()))
                     && resp.getData() instanceof Course) {
@@ -145,7 +174,7 @@ public class CourseController {
 
     public Message updateCourse(Course course) {
         try {
-            Message req = new Message("updateCourse", course);
+            Message req = new Message(MessageType.UPDATE_COURSE, course);
             return socket.sendRequest(req);
         } catch (Exception e) {
             e.printStackTrace();
@@ -158,7 +187,7 @@ public class CourseController {
 
     public Message deleteCourse(int courseId) {
         try {
-            Message req = new Message("deleteCourse", courseId);
+            Message req = new Message(MessageType.DELETE_COURSE, courseId);
             return socket.sendRequest(req);
         } catch (Exception e) {
             e.printStackTrace();
@@ -172,7 +201,7 @@ public class CourseController {
     // ===== Lesson CRUD =====
     public Message createLesson(Lesson lesson) {
         try {
-            Message req = new Message("createLesson", lesson);
+            Message req = new Message(MessageType.CREATE_LESSON, lesson);
             Message resp = socket.sendRequest(req);
             if ("success".equalsIgnoreCase(String.valueOf(resp.getStatus()))
                     && resp.getData() instanceof Lesson) {
@@ -191,7 +220,7 @@ public class CourseController {
 
     public Message updateLesson(Lesson lesson) {
         try {
-            Message req = new Message("updateLesson", lesson);
+            Message req = new Message(MessageType.UPDATE_LESSON, lesson);
             return socket.sendRequest(req);
         } catch (Exception e) {
             e.printStackTrace();
@@ -204,7 +233,7 @@ public class CourseController {
 
     public Message deleteLesson(int lessonId) {
         try {
-            Message req = new Message("deleteLesson", lessonId);
+            Message req = new Message(MessageType.DELETE_LESSON, lessonId);
             return socket.sendRequest(req);
         } catch (Exception e) {
             e.printStackTrace();
@@ -217,7 +246,7 @@ public class CourseController {
     // 选课人数
     public int countEnrolled(int lessonId) {
         try {
-            Message req = new Message("countEnrolled", lessonId);
+            Message req = new Message(MessageType.COUNT_ENROLLED, lessonId);
             Message resp = socket.sendRequest(req);
             Object data = resp.getData();
             if (data instanceof Integer) return (Integer) data;
@@ -231,7 +260,7 @@ public class CourseController {
     // 在 CourseController 中新增以下三个方法
     public Message createLessonTime(common.model.LessonTime t) {
         try {
-            Message req = new Message("createLessonTime", t);
+            Message req = new Message(MessageType.CREATE_LESSON_TIME, t);
             return socket.sendRequest(req);
         } catch (Exception e) {
             e.printStackTrace();
@@ -241,7 +270,7 @@ public class CourseController {
     }
     public Message updateLessonTime(common.model.LessonTime t) {
         try {
-            Message req = new Message("updateLessonTime", t);
+            Message req = new Message(MessageType.UPDATE_LESSON_TIME, t);
             return socket.sendRequest(req);
         } catch (Exception e) {
             e.printStackTrace();
@@ -251,7 +280,7 @@ public class CourseController {
     }
     public Message deleteLessonTime(int timeId) {
         try {
-            Message req = new Message("deleteLessonTime", timeId);
+            Message req = new Message(MessageType.DELETE_LESSON_TIME, timeId);
             return socket.sendRequest(req);
         } catch (Exception e) {
             e.printStackTrace();
@@ -261,7 +290,7 @@ public class CourseController {
     }
     public List<Enrollment> listEnrollmentsByLesson(int lessonId) {
         try {
-            Message req = new Message("listEnrollmentsByLesson", lessonId);
+            Message req = new Message(MessageType.LIST_ENROLLMENTS_BY_LESSON, lessonId);
             Message resp = socket.sendRequest(req);
             return (List<Enrollment>) resp.getData();
         } catch(Exception e) {

@@ -8,7 +8,9 @@ import common.model.User;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TeacherSchedulePanel extends JPanel {
@@ -23,12 +25,15 @@ public class TeacherSchedulePanel extends JPanel {
         List<Lesson> myLessons = allLessons.stream()
                 .filter(l -> user.getUserId().equals(l.getTeacherId()))
                 .collect(Collectors.toList());
+        // 批量预加载课程，消除逐课 getCourseById 的 N+1
+        Map<Integer, Course> courseMap = new HashMap<>();
+        for (Course c : controller.listCourses()) courseMap.put(c.getCourseId(), c);
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
 
         for (Lesson lesson : myLessons) {
-            Course course = controller.getCourseById(lesson.getCourseId());
+            Course course = courseMap.get(lesson.getCourseId());
             String courseName = course != null ? course.getCourseName() : String.valueOf(lesson.getCourseId());
 
             JPanel lessonPanel = new JPanel(new BorderLayout());

@@ -3,6 +3,7 @@ package client.ui;
 import client.controller.CourseController;
 import common.model.*;
 import common.net.Message;
+import util.EmptyState;
 import util.LessonTimeUtil;
 
 import javax.swing.*;
@@ -22,10 +23,12 @@ public class SelectCoursePanel extends JPanel {
     private final CourseController controller = new CourseController();
     private final DefaultTableModel tableModel;
     private final JTable table;
+    private final javax.swing.JScrollPane tableScroll;
     private final Runnable onEnrollmentChanged;
     private JTextField searchField; // 搜寻栏
     private TableRowSorter<DefaultTableModel> sorter;
     private java.util.Map<Integer, Course> courseMap = new java.util.HashMap<>();
+    private java.util.Map<String, String> teacherMap = new java.util.HashMap<>();
     private java.util.Set<Integer> enrolledLessonIds = new java.util.HashSet<>();
 
     public SelectCoursePanel(User user, Runnable onEnrollmentChanged) {
@@ -64,7 +67,7 @@ public class SelectCoursePanel extends JPanel {
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
         
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add((tableScroll = new JScrollPane(table)), BorderLayout.CENTER);
 
         // 按钮区域
         JButton selectBtn = new JButton("选课");
@@ -91,36 +94,48 @@ public class SelectCoursePanel extends JPanel {
         List<Lesson> lessons = controller.listLessons();
         List<Enrollment> enrollments = controller.listMyEnrollments(user.getUserId());
         List<Course> courses = controller.listCourses();
+        List<Teacher> teachers = controller.listTeachers();
         courseMap.clear();
         enrolledLessonIds.clear();
+        teacherMap.clear();
 
         for(Course c : courses) courseMap.put(c.getCourseId(), c);
+        if (teachers != null) for(Teacher t : teachers) {
+            if (t.getTeacherId() != null) teacherMap.put(t.getTeacherId(), t.getTeacherName());
+        }
         for(Enrollment e : enrollments){
             if("enrolled".equals(e.getStatus())){
                 enrolledLessonIds.add(e.getLessonId());
             }
+        }
+        // 批量预加载上课时间与已选人数，消除逐课 N+1 往返
+        java.util.Map<Integer, java.util.List<LessonTime>> timesByLesson = new java.util.HashMap<>();
+        java.util.Map<Integer, Integer> enrolledCountMap = controller.countEnrolledForAll();
+        for (LessonTime t : controller.listAllLessonTimes()) {
+            timesByLesson.computeIfAbsent(t.getLessonId(), k -> new java.util.ArrayList<>()).add(t);
         }
         if(lessons != null)
             for(Lesson l : lessons) {
                 Course c = courseMap.get(l.getCourseId());
                 String courseName = c != null ? c.getCourseName() : String.valueOf(l.getCourseId());
                 boolean selected = enrolledLessonIds.contains(l.getLessonId());
-                List<LessonTime> lessonTimes = controller.listLessonTimes(l.getLessonId());
-                int enrolledCnt = controller.countEnrolled(l.getLessonId());
+                List<LessonTime> lessonTimes = timesByLesson.getOrDefault(l.getLessonId(), java.util.Collections.emptyList());
+                int enrolledCnt = enrolledCountMap.getOrDefault(l.getLessonId(), 0);
                 int capacity = l.getCapacity();
                 String timeStr = LessonTimeUtil.formatTimes(lessonTimes);
                 tableModel.addRow(new Object[]{
                     l.getLessonId(),
                     courseName,
-                    "教师",
+                    teacherMap.getOrDefault(l.getTeacherId(), "—"),
                     c.getCredit(),
                     capacity,
                     enrolledCnt,
                     timeStr,
                     l.getClassroom(),
                     l.isOpen() ? selected ? "已选" : "未选" : "未开放"
-                }); // TODO:已选人数先设成0了
+                });
             }
+        EmptyState.updateEmptyState(tableScroll, table, "暂无可选课程");
         // 设置渲染器(标出选择的课程)
         table.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer(){
             @Override
@@ -235,32 +250,6 @@ public class SelectCoursePanel extends JPanel {
         // 只有成功时才通知课表刷新
         if (resp != null && "success".equalsIgnoreCase(String.valueOf(resp.getStatus()))) {
             if(onEnrollmentChanged != null)onEnrollmentChanged.run();
-        }
-    }
-
-    // XXX:不知道怎么做的
-    private void applyFilter() {
-        String text = searchField.getText();
-        if(text == null || text.trim().isEmpty()){
-            sorter.setRowFilter(null);
-        } else {
-            sorter.setRowFilter(new RowFilter<DefaultTableModel, Integer>() {
-                @Override
-                public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
-                    String keyword = text.trim().toLowerCase();
-                    if (keyword.isEmpty()) return true;
-
-                    // 只检查 0=课程编号, 1=课程名称, 2=教师
-                    for (int col : new int[]{0, 1, 2}) {
-                        Object value = entry.getValue(col);
-                        if (value != null && value.toString().toLowerCase().contains(keyword)) {
-                            return true; // 任意一列匹配即可
-                        }
-                    }
-                    return false; // 全部都不匹配 -> 过滤掉
-                }
-            });
-
         }
     }
 }

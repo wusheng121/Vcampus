@@ -1,10 +1,10 @@
 package client.ui;
 
 import client.controller.UserController;
-import com.formdev.flatlaf.FlatLightLaf;
 import common.model.User;
-import common.net.Message;
+import util.AsyncRunner;
 import util.Router;
+import util.UITheme;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,18 +17,6 @@ public class LoginFrame extends JFrame {
     private JLabel lblMessage;
 
     public LoginFrame() {
-        FlatLightLaf.setup();
-
-        // 全局 UI 调整
-        UIManager.put("Button.arc", 10);                // 按钮圆角
-        UIManager.put("Component.focusWidth", 2);       // 焦点边框
-        UIManager.put("Table.showGrid", true);          // 表格显示网格
-        UIManager.put("Table.gridColor", new Color(220,220,220));
-        UIManager.put("Table.selectionBackground", new Color(0,120,215)); // 选中颜色
-        UIManager.put("Table.selectionForeground", Color.WHITE);
-        UIManager.put("TextComponent.arc", 5);          // 文本框圆角
-        UIManager.put("ScrollBar.showButtons", true);   // 滚动条按钮
-
         setTitle("虚拟校园 - 用户登录");
         setSize(1280, 820);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -134,13 +122,15 @@ public class LoginFrame extends JFrame {
         // 按钮区域
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         btnPanel.setOpaque(false); // 背景透明
-        btnLogin = new JButton("登录");
-        btnLogin.setBackground(new Color(84, 113, 232));
+        btnLogin = new JButton("登录(L)");
+        btnLogin.setMnemonic('L');
+        btnLogin.setToolTipText("登录虚拟校园");
+        btnLogin.setBackground(UITheme.PRIMARY);
         btnLogin.setForeground(Color.WHITE);
 
-        btnExit = new JButton("退出");
-//        btnExit.setBackground(new Color(220, 53, 69));
-//        btnExit.setForeground(Color.WHITE);
+        btnExit = new JButton("退出(X)");
+        btnExit.setMnemonic('X');
+        btnExit.setToolTipText("退出程序");
 
         Dimension btnSize = new Dimension(100, 35);
         btnLogin.setPreferredSize(btnSize);
@@ -152,9 +142,27 @@ public class LoginFrame extends JFrame {
         gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         formPanel.add(btnPanel, gbc);
 
+        // 忘记密码链接
+        JButton btnForgot = new JButton("忘记密码？");
+        btnForgot.setBorderPainted(false);
+        btnForgot.setContentAreaFilled(false);
+        btnForgot.setOpaque(false);
+        btnForgot.setForeground(UITheme.PRIMARY);
+        btnForgot.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnForgot.setToolTipText("通过注册邮箱找回密码");
+        btnForgot.addActionListener(e -> new ForgotPasswordDialog(this).setVisible(true));
+        JPanel forgotPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        forgotPanel.setOpaque(false);
+        forgotPanel.add(btnForgot);
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        formPanel.add(forgotPanel, gbc);
+
         // ====== 按钮事件 ======
         btnLogin.addActionListener(e -> handleLogin());
         btnExit.addActionListener(e -> System.exit(0));
+        // Enter 提交：在账号/密码框按 Enter 直接登录
+        txtUserId.addActionListener(e -> handleLogin());
+        txtPassword.addActionListener(e -> handleLogin());
     }
 
     private void handleLogin() {
@@ -165,18 +173,34 @@ public class LoginFrame extends JFrame {
             return;
         }
 
-        lblMessage.setText("正在验证，请稍候...");
-
         UserController controller = new UserController();
-        Message response = controller.login(userId, password);
-        if ("success".equals(response.getStatus())) {
-            User user = (User) response.getData();
-            lblMessage.setText("登录成功，身份：" + user.getType());
-            Router.route(user);
-            dispose();
-        } else {
-            lblMessage.setText("登录失败：" + response.getMsg());
-        }
+        AsyncRunner.run(
+                () -> controller.login(userId, password),
+                response -> {
+                    if ("success".equals(response.getStatus())) {
+                        User user = (User) response.getData();
+                        util.ClientSession.login(user); // 设会话，供后续请求携带 caller 做 RBAC
+                        lblMessage.setText("登录成功，身份：" + user.getType());
+                        Router.route(user);
+                        dispose();
+                    } else {
+                        lblMessage.setText("登录失败：" + response.getMsg());
+                    }
+                },
+                () -> { // 进入加载态（EDT），"正在验证"现在能真正重绘
+                    lblMessage.setText("正在验证，请稍候...");
+                    btnLogin.setEnabled(false);
+                    btnExit.setEnabled(false);
+                    txtUserId.setEditable(false);
+                    txtPassword.setEditable(false);
+                },
+                () -> { // 退出加载态（EDT）
+                    btnLogin.setEnabled(true);
+                    btnExit.setEnabled(true);
+                    txtUserId.setEditable(true);
+                    txtPassword.setEditable(true);
+                }
+        );
     }
 
     private ImageIcon loadIcon(String resourcePath) {

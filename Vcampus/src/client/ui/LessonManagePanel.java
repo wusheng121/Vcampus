@@ -6,6 +6,7 @@ import common.model.Lesson;
 import common.model.LessonTime;
 import common.model.Teacher;
 import common.net.Message;
+import util.EmptyState;
 import util.LessonTimeUtil;
 
 import javax.swing.*;
@@ -61,6 +62,7 @@ public class LessonManagePanel extends JPanel {
     };
 
     private final JTable table = new JTable(model);
+    private final JScrollPane tableScroll = new JScrollPane(table);
     private final TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
 
     public LessonManagePanel() {
@@ -93,7 +95,7 @@ public class LessonManagePanel extends JPanel {
         table.getTableHeader().setReorderingAllowed(false);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowSorter(sorter);
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add(tableScroll, BorderLayout.CENTER);
         hideIdColumn(); // 隐藏0号列（开课ID）
 
         // 事件
@@ -120,10 +122,18 @@ public class LessonManagePanel extends JPanel {
     private void refreshTable() {
         model.setRowCount(0);
         List<Lesson> lessons = controller.listLessons();
+        // 批量预加载课程名与上课时间，消除逐课 N+1
+        java.util.Map<Integer, Course> courseMap = new java.util.HashMap<>();
+        for (Course c : controller.listCourses()) courseMap.put(c.getCourseId(), c);
+        java.util.Map<Integer, java.util.List<LessonTime>> timesByLesson = new java.util.HashMap<>();
+        for (LessonTime t : controller.listAllLessonTimes()) {
+            timesByLesson.computeIfAbsent(t.getLessonId(), k -> new java.util.ArrayList<>()).add(t);
+        }
         for (Lesson lesson : lessons) {
-            Course c = controller.getCourseById(lesson.getCourseId());
+            Course c = courseMap.get(lesson.getCourseId());
             String courseName = c != null ? c.getCourseName() : "";
-            String timeStr = LessonTimeUtil.formatTimes(controller.listLessonTimes(lesson.getLessonId()));
+            List<LessonTime> times = timesByLesson.getOrDefault(lesson.getLessonId(), java.util.Collections.emptyList());
+            String timeStr = LessonTimeUtil.formatTimes(times);
             model.addRow(new Object[]{
                     lesson.getLessonId(),            // 0 (隐藏)
                     lesson.getCourseId(),            // 1
@@ -135,6 +145,7 @@ public class LessonManagePanel extends JPanel {
                     lesson.getRemark()               // 7
             });
         }
+        EmptyState.updateEmptyState(tableScroll, table, "暂无排课");
     }
 
     private void onCreate(){

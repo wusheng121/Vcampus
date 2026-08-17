@@ -15,6 +15,7 @@ public class studentFrame extends MainFrame {
 
     public studentFrame(User user) {
         super(user);
+        buildSidebar();
     }
 
     @Override
@@ -24,29 +25,6 @@ public class studentFrame extends MainFrame {
         registerModule("商店", () -> new ShopFrame(user), "/pictures/商店.png");
     }
 
-    @Override
-    protected void addModuleMenu(JMenu systemMenu) {
-
-        JMenuItem manageCourses = new JMenuItem("选课系统");
-        manageCourses.addActionListener(e -> {
-            showModule("选课系统");
-        });
-
-        JMenuItem library = new JMenuItem("图书馆");
-        library.addActionListener(e -> {
-            showModule("图书馆");  // 直接切换到已注册的 LibraryPanel
-        });
-
-        JMenuItem shop = new JMenuItem("商店");
-        shop.addActionListener(e -> {
-            showModule("商店");
-        });
-
-
-        systemMenu.add(manageCourses);
-        systemMenu.add(library);
-        systemMenu.add(shop);
-    }
     protected void showPersonalInfo() {
         if (student == null) {
             JOptionPane.showMessageDialog(this, "未能加载学生信息！", "错误", JOptionPane.ERROR_MESSAGE);
@@ -62,7 +40,7 @@ public class studentFrame extends MainFrame {
     }
 
     private void backToMain() {
-        cardLayout.show(mainPanel, "MAIN");
+        cardLayout.show(mainPanel, "Welcome");
     }
 
 }

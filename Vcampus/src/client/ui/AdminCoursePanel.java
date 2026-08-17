@@ -3,6 +3,7 @@ package client.ui;
 import client.controller.CourseController;
 import common.model.Course;
 import common.net.Message;
+import util.EmptyState;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -23,6 +24,7 @@ public class AdminCoursePanel extends JPanel {
         public boolean isCellEditable(int r,int c){ return false; }
     };
     private final JTable table = new JTable(model);
+    private final JScrollPane tableScroll = new JScrollPane(table);
     private final TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(model);
     
     // constructor
@@ -52,7 +54,7 @@ public class AdminCoursePanel extends JPanel {
     table.getTableHeader().setReorderingAllowed(false);
     table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
     table.setRowSorter(sorter);                  // ✅ 开启排序/过滤
-    add(new JScrollPane(table), BorderLayout.CENTER);
+        add(tableScroll, BorderLayout.CENTER);
 
     // 事件
     btnRef.addActionListener(e -> refreshTable());
@@ -80,6 +82,7 @@ public class AdminCoursePanel extends JPanel {
                     course.getCourseId(), course.getCourseCode(), course.getCourseName(), course.getCredit(), course.getDescription()
                 });             
             }
+        EmptyState.updateEmptyState(tableScroll, table, "暂无课程");
     }
 
     private void onCreate() {
@@ -169,8 +172,15 @@ public class AdminCoursePanel extends JPanel {
             c.gridy++; p.add(new JScrollPane(taDesc),c);
 
             String title = idOrNull==null ? "新增课程" : ("编辑课程 - ID " + idOrNull);
-            int opt = JOptionPane.showConfirmDialog(parent, p, title, JOptionPane.OK_CANCEL_OPTION);
-            return opt == JOptionPane.OK_OPTION;
+            while (true) {
+                int opt = JOptionPane.showConfirmDialog(parent, p, title, JOptionPane.OK_CANCEL_OPTION);
+                if (opt != JOptionPane.OK_OPTION) return false;
+                if (!util.Validators.nonEmpty(tfCode.getText()) || !util.Validators.nonEmpty(tfName.getText())) {
+                    JOptionPane.showMessageDialog(parent, "课程代码与名称不能为空", "提示", JOptionPane.WARNING_MESSAGE);
+                    continue;
+                }
+                return true;
+            }
         }
 
         Object[] toRow(){

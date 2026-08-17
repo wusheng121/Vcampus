@@ -83,11 +83,4 @@ public class Student implements Serializable {
                 ", userId='" + userId + '\'' +
                 '}';
     }
-    public StudentPersonal getpersonal() {
-        return personal;
-    }
-
-    public void setpersonal(StudentPersonal personal) {
-        this.personal = personal;
-    }
 }

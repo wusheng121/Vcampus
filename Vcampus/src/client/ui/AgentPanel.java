@@ -12,8 +12,9 @@ import java.util.concurrent.ExecutionException;
 
 public class AgentPanel extends JPanel {
 	private final User user;
-    private final String agentTitle;
-    private final AgentHooks hooks;
+    private String agentTitle;
+    private AgentHooks hooks;
+    private JLabel titleLabel;
 
 	private JTextPane chatPane;      // HTML 氣泡聊天區
 	private JTextArea inputArea;     // 多行輸入框
@@ -28,7 +29,7 @@ public class AgentPanel extends JPanel {
         <style type="text/css">
         /* Swing HTML 仅支持很少的属性，这里尽量保守 */
         body {
-          font-family: 'Microsoft JhengHei UI', sans-serif;
+          font-family: '微软雅黑', sans-serif;
           margin: 0; padding: 12px;
           background: transparent; /* 让下面的浅灰透上来 */
         }
@@ -77,20 +78,28 @@ public class AgentPanel extends JPanel {
         this.agentTitle = "课务助理";
         this.hooks = new CourseAgentHooks(user); // ← 使用独立出来的 Hook
         initUiAndData();
+    }
+
+    /** 运行期切换 hooks（用于全局助理按当前模块切换上下文）。切换即清空对话记忆。 */
+    public void setHooks(AgentHooks newHooks) {
+        this.hooks = newHooks;
+        if (newHooks != null) {
+            newHooks.preload();
+        }
+        conversationMemory.clear();
+        chatPane.setText(BASE_HTML);
+        appendBubble(false, newHooks != null ? newHooks.helpText() : CourseSelectionContext.HELP_TEXT);
+    }
+
+    /** 更新顶部标题。 */
+    public void setTitle(String title) {
+        this.agentTitle = title;
+        if (titleLabel != null) {
+            titleLabel.setText(title);
+        }
     }        
     
     private void initUiAndData() {
-        try {
-            UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
-            Font uiFont = new Font("Microsoft JhengHei UI", Font.PLAIN, 13);
-            java.util.Enumeration<Object> keys = UIManager.getDefaults().keys();
-            while (keys.hasMoreElements()) {
-                Object key = keys.nextElement();
-                Object value = UIManager.get(key);
-                if (value instanceof Font) UIManager.put(key, uiFont);
-            }
-        } catch (Exception ignore) {}
-        
         // LLM 实例
         llm = new UseLlm();
     
@@ -243,15 +252,15 @@ public class AgentPanel extends JPanel {
             
             
     
-            JLabel title = new JLabel(agentTitle);
-            title.setFont(title.getFont().deriveFont(Font.BOLD, 16f));
+            titleLabel = new JLabel(agentTitle);
+            titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
     
             JLabel subtitle = new JLabel("您好，" + (user != null ? String.valueOf(user.getUserId()) : "同学"));
             subtitle.setForeground(new Color(120,120,120));
     
             JPanel titleBox = new JPanel(new GridLayout(2,1,0,2));
             titleBox.setOpaque(false);
-            titleBox.add(title);
+            titleBox.add(titleLabel);
             titleBox.add(subtitle);
     
             statusLabel = new JLabel("就绪");
@@ -268,9 +277,9 @@ public class AgentPanel extends JPanel {
                     BorderFactory.createMatteBorder(0,0,1,0, new Color(0xE0,0xE3,0xE7)),
                     BorderFactory.createEmptyBorder(10, 12, 10, 12)
             ));
-            title.setForeground(new Color(0x1F,0x29,0x37));
             subtitle.setForeground(new Color(0x6B,0x72,0x80));
             statusLabel.setForeground(new Color(0x6B,0x72,0x80));
+            titleLabel.setForeground(new Color(0x1F,0x29,0x37));
     
             
             // --- 聊天卡片容器（白底+描边+阴影） ---

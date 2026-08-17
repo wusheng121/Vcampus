@@ -1,4 +1,6 @@
 package client.ui;
+import util.EmptyState;
+import util.UITheme;
 
 import client.controller.BookController;
 import client.controller.BorrowRecordController;
@@ -24,6 +26,7 @@ public class CategoryBrowsePanel extends JPanel {
 
     private JTable table;
     private DefaultTableModel tableModel;
+    private JScrollPane tableScroll;
     private JTree categoryTree;
 
     // 缓存所有书籍，避免每次点分类都重新查库
@@ -49,21 +52,21 @@ public class CategoryBrowsePanel extends JPanel {
         table.setRowHeight(28);
 
         JScrollPane treeScroll = new JScrollPane(categoryTree);
-        JScrollPane tableScroll = new JScrollPane(table);
+        JScrollPane tableScroll = this.tableScroll = new JScrollPane(table);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScroll, tableScroll);
         splitPane.setDividerLocation(200);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180)); // 钢蓝色
+        header.setBackground(UITheme.HEADER); // 钢蓝色
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
         add(splitPane, BorderLayout.CENTER);
 
         // 操作列（借书按钮）
         table.getColumnModel().getColumn(6).setCellRenderer(
-                new ButtonRenderer("借书", new Color(40, 167, 69), Color.WHITE));
+                new ButtonRenderer("借书", UITheme.SUCCESS, Color.WHITE));
         table.getColumnModel().getColumn(6).setCellEditor(
-                new ButtonEditor("借书", table, e -> onBorrow(), new Color(40, 167, 69), Color.WHITE));
+                new ButtonEditor("借书", table, e -> onBorrow(), UITheme.SUCCESS, Color.WHITE));
 
         // ===== 初始化数据（从数据库获取所有书籍）=====
         loadBooksAndInitUI();
@@ -128,6 +131,7 @@ public class CategoryBrowsePanel extends JPanel {
                     "借书"
             });
         }
+        EmptyState.updateEmptyState(tableScroll, table, "该分类下暂无图书");
     }
 
     /** 借书按钮逻辑 */

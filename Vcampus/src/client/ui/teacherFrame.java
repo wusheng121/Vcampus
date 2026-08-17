@@ -14,6 +14,7 @@ public class teacherFrame extends MainFrame {
     private TeacherInfoPanel infoPanel;            // 个人信息面板（懒加载）
     public teacherFrame(User user) {
         super(user);
+        buildSidebar();
 
         /* 加载教师对象 */
         String teacherId = findTeacherIdByUserId(user.getUserId());
@@ -27,7 +28,7 @@ public class teacherFrame extends MainFrame {
     private String findTeacherIdByUserId(String userId) {
         try {
             Message req = new Message(MessageType.TEACHER_ID_BY_USERID, userId);
-            Message resp = new ClientSocket().sendRequest(req);
+            Message resp = ClientSocket.getInstance().sendRequest(req);
             if ("success".equals(resp.getStatus())) {
                 return (String) resp.getData();
             }
@@ -41,7 +42,7 @@ public class teacherFrame extends MainFrame {
     private Teacher findTeacherById(String teacherId) {
         try {
             Message req = new Message(MessageType.TEACHER_GET, teacherId);
-            Message resp = new ClientSocket().sendRequest(req);
+            Message resp = ClientSocket.getInstance().sendRequest(req);
             if ("success".equals(resp.getStatus())) {
                 return (Teacher) resp.getData();
             }
@@ -56,30 +57,6 @@ public class teacherFrame extends MainFrame {
         registerModule("图书馆", () -> new LibraryFrame(user), "/pictures/图书馆.png");
         registerModule("选课系统", () -> new TeacherCourseFrame(user), "/pictures/排课.png");
         registerModule("商店", () -> new ShopFrame(user), "/pictures/商店.png");
-    }
-
-    @Override
-    protected void addModuleMenu(JMenu systemMenu) {
-
-        JMenuItem manageCourses = new JMenuItem("选课系统");
-        manageCourses.addActionListener(e -> {
-            showModule("选课系统");
-        });
-
-        JMenuItem library = new JMenuItem("图书馆");
-        library.addActionListener(e -> {
-            showModule("图书馆");  // 直接切换到已注册的 LibraryPanel
-        });
-
-        JMenuItem shop = new JMenuItem("商店");
-        shop.addActionListener(e -> {
-            showModule("商店");
-        });
-
-
-        systemMenu.add(manageCourses);
-        systemMenu.add(library);
-        systemMenu.add(shop);
     }
 
     /* =============== 个人信息 =============== */
@@ -98,6 +75,6 @@ public class teacherFrame extends MainFrame {
     }
 
     private void backToMain() {
-        cardLayout.show(mainPanel, "MAIN");
+        cardLayout.show(mainPanel, "Welcome");
     }
 }

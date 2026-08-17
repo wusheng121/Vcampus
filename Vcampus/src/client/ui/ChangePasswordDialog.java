@@ -1,6 +1,7 @@
 package client.ui;
 
 import client.controller.UserController;
+import util.Validators;
 
 import javax.swing.*;
 import java.awt.*;
@@ -50,6 +51,10 @@ public class ChangePasswordDialog extends JDialog {
         }
         if (!newPwd.equals(confirm)) {
             JOptionPane.showMessageDialog(this, "新密码与确认密码不一致！", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (!Validators.passwordStrong(newPwd)) {
+            JOptionPane.showMessageDialog(this, "新密码强度不足：需至少 8 位且含字母与数字。", "提示", JOptionPane.WARNING_MESSAGE);
             return;
         }
 

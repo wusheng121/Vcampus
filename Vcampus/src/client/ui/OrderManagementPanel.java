@@ -4,6 +4,7 @@ import client.controller.OrderController;
 import common.model.Order;
 import common.model.OrderItem;
 import common.model.User;
+import util.EmptyState;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -15,6 +16,7 @@ public class OrderManagementPanel extends JPanel {
     private final OrderController orderController;
     private final User currentUser;
     private JTable orderTable;
+    private JScrollPane scrollPane;
     private DefaultTableModel tableModel;
 
     public OrderManagementPanel(User user) {
@@ -61,7 +63,7 @@ public class OrderManagementPanel extends JPanel {
             }
         };
         orderTable = new JTable(tableModel);
-        JScrollPane scrollPane = new JScrollPane(orderTable);
+        scrollPane = new JScrollPane(orderTable);
 
         mainPanel.add(toolPanel, BorderLayout.NORTH);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -85,6 +87,7 @@ public class OrderManagementPanel extends JPanel {
                 });
             }
         }
+        EmptyState.updateEmptyState(scrollPane, orderTable, "暂无订单");
     }
 
     private void cancelSelectedOrder() {

@@ -1,15 +1,11 @@
 package client.controller;
+import common.net.MessageType;
 
 import client.net.ClientSocket;
 import common.model.Product;
 import common.model.ProductCategory;
 import common.model.User;
 import common.net.Message;
-import server.dao.OrderDAO;
-import server.dao.OrderDAOImpl;
-import server.dao.ProductDAO;
-import server.dao.ProductDAOImpl;
-import server.service.ProductService;
 
 import javax.swing.*;
 import java.util.Collections;
@@ -19,33 +15,20 @@ import java.util.Objects;
 public class ProductController {
     private final ClientSocket clientSocket;
     private User currentUser;
-    private final ProductService productService;
 
     public ProductController() {
-        this(new ClientSocket(), createProductService());
+        this.clientSocket = ClientSocket.getInstance();
     }
 
-    public ProductController(ClientSocket clientSocket, ProductService productService) {
-        this.clientSocket = clientSocket;
-        this.productService = productService;
-    }
-
-    // 创建 ProductService 的辅助方法
-    private static ProductService createProductService() {
-        ProductDAO productDAO = new ProductDAOImpl();
-        OrderDAO orderDAO = new OrderDAOImpl();
-        return new ProductService(productDAO, orderDAO);
-    }
     // 设置当前用户
     public void setCurrentUser(User user) {
         this.currentUser = Objects.requireNonNull(user, "用户不能为null");
         System.out.println("[DEBUG] 设置当前用户: " + currentUser.getUserId() + ", 类型: " + currentUser.getType());
     }
-
     public List<Product> getAllProducts() {
         try {
             Message request = new Message();
-            request.setType("getAllProducts");
+            request.setType(MessageType.GET_ALL_PRODUCTS);
 
             Message response = clientSocket.sendRequest(request);
             if ("success".equals(response.getStatus())) {
@@ -61,11 +44,9 @@ public class ProductController {
     public ProductCategory getCategoryById(String categoryId) {
         try {
             Message request = new Message();
-            request.setType("getCategoryById");
+            request.setType(MessageType.GET_CATEGORY_BY_ID);
             request.setData(categoryId);
-
             Message response = clientSocket.sendRequest(request);
-
             if ("success".equals(response.getStatus())) {
                 return (ProductCategory) response.getData();
             }
@@ -78,7 +59,7 @@ public class ProductController {
     public List<Product> getAvailableProducts() {
         try {
             Message request = new Message();
-            request.setType("getAvailableProducts");
+            request.setType(MessageType.GET_AVAILABLE_PRODUCTS);
 
             Message response = clientSocket.sendRequest(request);
             if ("success".equals(response.getStatus())) {
@@ -108,7 +89,7 @@ public class ProductController {
 
             // 准备请求
             Message request = new Message();
-            request.setType("addProduct");
+            request.setType(MessageType.ADD_PRODUCT);
             request.setData(product);
             request.setExtra(currentUser);
 
@@ -137,7 +118,7 @@ public class ProductController {
     public List<Product> searchProductsByName(String name) {
         try {
             Message request = new Message();
-            request.setType("searchProductsByName");
+            request.setType(MessageType.SEARCH_PRODUCTS_BY_NAME);
             request.setData(name);
 
             Message response = clientSocket.sendRequest(request);
@@ -154,7 +135,7 @@ public class ProductController {
     public Product getProductById(String productId) {
         try {
             Message request = new Message();
-            request.setType("getProductById");
+            request.setType(MessageType.GET_PRODUCT_BY_ID);
             request.setData(productId);
 
             Message response = clientSocket.sendRequest(request);
@@ -192,7 +173,7 @@ public class ProductController {
 
             // 准备请求
             Message request = new Message();
-            request.setType("updateProduct");
+            request.setType(MessageType.UPDATE_PRODUCT);
             request.setData(product);
             request.setExtra(currentUser);
 
@@ -273,7 +254,7 @@ public class ProductController {
 
     private Message buildDeleteRequest(String productId) {
         Message request = new Message();
-        request.setType("deleteProduct");
+        request.setType(MessageType.DELETE_PRODUCT);
         request.setData(productId);
         request.setExtra(currentUser);
         return request;
@@ -330,17 +311,38 @@ public class ProductController {
 
 
     public List<ProductCategory> getAllCategories() {
-        return productService.getAllCategories();
+        try {
+            Message request = new Message();
+            request.setType(MessageType.GET_ALL_CATEGORIES);
+            Message response = clientSocket.sendRequest(request);
+            if ("success".equals(response.getStatus())) {
+                return (List<ProductCategory>) response.getData();
+            }
+        } catch (Exception e) {
+            System.err.println("获取所有分类失败: " + e.getMessage());
+        }
+        return Collections.emptyList();
     }
 
     public List<Product> getProductsByCategory(String categoryId) {
-        return productService.getProductsByCategory(categoryId);
+        try {
+            Message request = new Message();
+            request.setType(MessageType.GET_PRODUCTS_BY_CATEGORY);
+            request.setData(categoryId);
+            Message response = clientSocket.sendRequest(request);
+            if ("success".equals(response.getStatus())) {
+                return (List<Product>) response.getData();
+            }
+        } catch (Exception e) {
+            System.err.println("按分类查询商品失败: " + e.getMessage());
+        }
+        return Collections.emptyList();
     }
 
     public boolean addProductCategory(ProductCategory category) {
         try {
             Message request = new Message();
-            request.setType("addProductCategory");
+            request.setType(MessageType.ADD_PRODUCT_CATEGORY);
             request.setData(category);
             request.setExtra(currentUser); // 传递当前用户信息
 
@@ -371,7 +373,7 @@ public class ProductController {
     public boolean deleteProductCategory(String categoryId) {
         try {
             Message request = new Message();
-            request.setType("deleteProductCategory");
+            request.setType(MessageType.DELETE_PRODUCT_CATEGORY);
             request.setData(categoryId);
             request.setExtra(currentUser); // 传递当前用户信息
 

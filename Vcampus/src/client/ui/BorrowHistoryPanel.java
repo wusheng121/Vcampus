@@ -1,4 +1,6 @@
 package client.ui;
+import util.EmptyState;
+import util.UITheme;
 
 import client.controller.BorrowRecordController;
 import common.model.BorrowRecord;
@@ -15,6 +17,7 @@ import java.util.List;
 public class BorrowHistoryPanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable table;
+    private JScrollPane tableScroll;
     private BorrowRecordController recordController = new BorrowRecordController();
     private User currentUser;
 
@@ -25,7 +28,7 @@ public class BorrowHistoryPanel extends JPanel {
         // ===== 顶部工具栏 =====
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton refreshBtn = new JButton("刷新");
-        refreshBtn.setBackground(new Color(70, 130, 180));
+        refreshBtn.setBackground(UITheme.HEADER);
         refreshBtn.setForeground(Color.WHITE);
         refreshBtn.setFocusPainted(false);
         refreshBtn.setOpaque(true);
@@ -46,11 +49,11 @@ public class BorrowHistoryPanel extends JPanel {
         table.setRowHeight(28);
         table.getTableHeader().setReorderingAllowed(false);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180)); // 钢蓝色
+        header.setBackground(UITheme.HEADER); // 钢蓝色
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add((tableScroll = new JScrollPane(table)), BorderLayout.CENTER);
 
         // 初始加载数据
         refreshTable();
@@ -80,5 +83,6 @@ public class BorrowHistoryPanel extends JPanel {
                     fine
             });
         }
+        EmptyState.updateEmptyState(tableScroll, table, "暂无借阅历史");
     }
 }

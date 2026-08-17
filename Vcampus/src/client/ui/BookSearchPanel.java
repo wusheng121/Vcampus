@@ -1,4 +1,6 @@
 package client.ui;
+import util.EmptyState;
+import util.UITheme;
 
 import client.controller.BookController;
 import client.controller.BorrowRecordController;
@@ -17,8 +19,9 @@ import java.util.stream.Collectors;
 
 public class BookSearchPanel extends JPanel {
     private final User user;
-    private DefaultTableModel tableModel;
-    private JTable table;
+private DefaultTableModel tableModel;
+private JTable table;
+private JScrollPane tableScroll;
     private BookController bookController = new BookController();
     private BorrowRecordController borrowRecordController = new BorrowRecordController();
 
@@ -33,7 +36,7 @@ public class BookSearchPanel extends JPanel {
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JTextField searchField = new JTextField(20);
         JButton searchBtn = new JButton("查询");
-        searchBtn.setBackground(new Color(70, 130, 180)); // Bootstrap 风格绿色
+        searchBtn.setBackground(UITheme.HEADER); // Bootstrap 风格绿色
         searchBtn.setForeground(Color.WHITE);
         searchBtn.setFocusPainted(false);
         searchBtn.setOpaque(true);
@@ -65,15 +68,15 @@ public class BookSearchPanel extends JPanel {
         table.setRowHeight(30);
         table.getTableHeader().setReorderingAllowed(false);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180)); // 钢蓝色
+        header.setBackground(UITheme.HEADER); // 钢蓝色
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add((tableScroll = new JScrollPane(table)), BorderLayout.CENTER);
 
         // 操作列（借书/还书按钮）
-        table.getColumnModel().getColumn(7).setCellRenderer(new ButtonRenderer("借书", new Color(40, 167, 69), Color.WHITE));
-        table.getColumnModel().getColumn(7).setCellEditor(new ButtonEditor("借书", table, e -> onBorrow(), new Color(40, 167, 69), Color.WHITE));
+        table.getColumnModel().getColumn(7).setCellRenderer(new ButtonRenderer("借书", UITheme.SUCCESS, Color.WHITE));
+        table.getColumnModel().getColumn(7).setCellEditor(new ButtonEditor("借书", table, e -> onBorrow(), UITheme.SUCCESS, Color.WHITE));
 
         // 按钮事件
         searchBtn.addActionListener(e -> onSearch(searchField.getText().trim()));
@@ -122,6 +125,7 @@ public class BookSearchPanel extends JPanel {
                     "借书"
             });
         }
+        EmptyState.updateEmptyState(tableScroll, table, "暂无符合条件的书籍");
     }
 
     // 借书按钮逻辑

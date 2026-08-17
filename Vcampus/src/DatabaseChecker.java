@@ -1,3 +1,5 @@
+import util.Config;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -6,10 +8,10 @@ import java.sql.Statement;
 
 public class DatabaseChecker {
     public static void main(String[] args) {
-        // 数据库连接信息
-        String url = "jdbc:mysql://localhost:3306/vcampus";
-        String user = "root"; // 替换为你的MySQL用户名
-        String password = "xyz1210258"; // 替换为你的MySQL密码
+        // 数据库连接信息（从 config.properties 读取）
+        String url = Config.get("db.url", "jdbc:mysql://localhost:3306/vcampus");
+        String user = Config.get("db.user", "root");
+        String password = Config.get("db.password", "");
 
         try {
             // 加载MySQL JDBC驱动

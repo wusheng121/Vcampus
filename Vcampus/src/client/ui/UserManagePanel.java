@@ -1,4 +1,7 @@
 package client.ui;
+import util.EmptyState;
+import util.UITheme;
+import util.Validators;
 
 import client.controller.UserController;
 import common.model.User;
@@ -14,6 +17,7 @@ import java.util.List;
 public class UserManagePanel extends JPanel {
     private DefaultTableModel tableModel;
     private JTable table;
+    private JScrollPane tableScroll;
     private UserController userController = new UserController();
 
     public UserManagePanel(User user) {
@@ -22,21 +26,16 @@ public class UserManagePanel extends JPanel {
         // 顶部栏
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton addBtn = new JButton("新增");
-        addBtn.setBackground(new Color(70, 130, 180)); // Bootstrap 风格绿色
+        addBtn.setBackground(UITheme.HEADER); // Bootstrap 风格绿色
         addBtn.setForeground(Color.WHITE);
         addBtn.setFocusPainted(false);
         addBtn.setOpaque(true);
         JTextField searchField = new JTextField(20);
         JButton searchBtn = new JButton("查询");
-        searchBtn.setBackground(new Color(70, 130, 180)); // Bootstrap 风格绿色
+        searchBtn.setBackground(UITheme.HEADER); // Bootstrap 风格绿色
         searchBtn.setForeground(Color.WHITE);
         searchBtn.setFocusPainted(false);
         searchBtn.setOpaque(true);
-        topPanel.add(addBtn);
-        topPanel.add(new JLabel("搜索："));
-        topPanel.add(searchField);
-        topPanel.add(searchBtn);
-        add(topPanel, BorderLayout.NORTH);
 
         // 角色筛选
         JComboBox<String> roleFilter = new JComboBox<>(new String[]{"全部", "student", "teacher", "admin"});
@@ -62,10 +61,10 @@ public class UserManagePanel extends JPanel {
         table.setRowHeight(30);
         table.getTableHeader().setReorderingAllowed(false);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180)); // 钢蓝色
+        header.setBackground(UITheme.HEADER); // 钢蓝色
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add((tableScroll = new JScrollPane(table)), BorderLayout.CENTER);
 
         // 渲染器 & 编辑器
         table.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer("修改", new Color(40,167,69), Color.WHITE));
@@ -116,6 +115,7 @@ public class UserManagePanel extends JPanel {
                     "修改", "删除"
             });
         }
+        EmptyState.updateEmptyState(tableScroll, table);
     }
 
 
@@ -134,21 +134,37 @@ public class UserManagePanel extends JPanel {
                 "角色:", roleBox
         };
 
-        int option = JOptionPane.showConfirmDialog(this, message, "新增用户", JOptionPane.OK_CANCEL_OPTION);
-        if (option == JOptionPane.OK_OPTION) {
+        while (true) {
+            int option = JOptionPane.showConfirmDialog(this, message, "新增用户", JOptionPane.OK_CANCEL_OPTION);
+            if (option != JOptionPane.OK_OPTION) return;
+
+            String uid = userIdField.getText().trim();
+            String name = nameField.getText().trim();
+            String email = emailField.getText().trim();
+            String pwd = new String(passwordField.getPassword());
+
+            if (!Validators.nonEmpty(uid) || !Validators.nonEmpty(name) || !Validators.nonEmpty(pwd)) {
+                JOptionPane.showMessageDialog(this, "用户ID/姓名/密码不能为空", "提示", JOptionPane.WARNING_MESSAGE);
+                continue;
+            }
+            if (!email.isEmpty() && !Validators.isEmail(email)) {
+                JOptionPane.showMessageDialog(this, "邮箱格式不正确", "提示", JOptionPane.WARNING_MESSAGE);
+                continue;
+            }
+
             User newUser = new User();
-            newUser.setUserId(userIdField.getText().trim());
-            newUser.setName(nameField.getText().trim());
-            newUser.setEmail(emailField.getText().trim());
-            newUser.setPassword(new String(passwordField.getPassword()));
+            newUser.setUserId(uid);
+            newUser.setName(name);
+            newUser.setEmail(email);
+            newUser.setPassword(pwd);
             newUser.setType((String) roleBox.getSelectedItem());
-            //newUser.setCreatedAt((String) now());
 
             boolean success = userController.addUser(newUser);
             if (!success) {
                 JOptionPane.showMessageDialog(this, "新增用户失败！", "错误", JOptionPane.ERROR_MESSAGE);
             }
             refreshTable();
+            return;
         }
     }
 

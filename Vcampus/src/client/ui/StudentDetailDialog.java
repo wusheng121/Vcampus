@@ -3,6 +3,7 @@ package client.ui;
 import client.controller.StudentController;
 import common.model.Student;
 import common.model.StudentPersonal;
+import common.model.User;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,12 +14,18 @@ import java.awt.*;
  */
 public class StudentDetailDialog extends JPanel {
 
-    private final Student student;
+    private Student student;
+    private final User user;
     private final Runnable parentRefresh; // 回调：关闭后刷新主表
     private final Runnable onClose;       // 回调：关闭面板
 
-    public StudentDetailDialog(Student stu, Runnable parentRefresh, Runnable onClose) {
+    // 值标签，保存编辑后可就地刷新，无需重建整个面板
+    private JLabel lblStudentId, lblName, lblSex, lblIdentity, lblUserId;
+    private JLabel lblPhone, lblEmail, lblAddress;
+
+    public StudentDetailDialog(Student stu, User user, Runnable parentRefresh, Runnable onClose) {
         this.student = stu;
+        this.user = user;
         this.parentRefresh = parentRefresh;
         this.onClose = onClose;
         setLayout(new BorderLayout());
@@ -30,23 +37,28 @@ public class StudentDetailDialog extends JPanel {
         p.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         /* 学籍信息 */
-        p.add(new JLabel("学号"));      p.add(new JLabel(student.getStudentId()));
-        p.add(new JLabel("姓名"));      p.add(new JLabel(student.getStudentName()));
-        p.add(new JLabel("性别"));      p.add(new JLabel(student.getSex()));
-        p.add(new JLabel("身份证号"));  p.add(new JLabel(student.getIdentity()));
-        p.add(new JLabel("一卡通号"));  p.add(new JLabel(student.getUserId()));
+        lblStudentId = new JLabel(student.getStudentId());
+        lblName = new JLabel(student.getStudentName());
+        lblSex = new JLabel(student.getSex());
+        lblIdentity = new JLabel(student.getIdentity());
+        lblUserId = new JLabel(student.getUserId());
+        p.add(new JLabel("学号"));      p.add(lblStudentId);
+        p.add(new JLabel("姓名"));      p.add(lblName);
+        p.add(new JLabel("性别"));      p.add(lblSex);
+        p.add(new JLabel("身份证号"));  p.add(lblIdentity);
+        p.add(new JLabel("一卡通号"));  p.add(lblUserId);
 
         /* 联系方式 */
         StudentPersonal sp = student.getPersonal();
-        if (sp != null) {
-            p.add(new JLabel("电话")); p.add(new JLabel(sp.getPhone()));
-            p.add(new JLabel("邮箱")); p.add(new JLabel(sp.getEmail()));
-            p.add(new JLabel("地址")); p.add(new JLabel(sp.getAddress()));
-        } else {
-            p.add(new JLabel("电话")); p.add(new JLabel("未填写"));
-            p.add(new JLabel("邮箱")); p.add(new JLabel("未填写"));
-            p.add(new JLabel("地址")); p.add(new JLabel("未填写"));
-        }
+        String phone = sp != null ? nz(sp.getPhone()) : "未填写";
+        String email = sp != null ? nz(sp.getEmail()) : "未填写";
+        String address = sp != null ? nz(sp.getAddress()) : "未填写";
+        lblPhone = new JLabel(phone);
+        lblEmail = new JLabel(email);
+        lblAddress = new JLabel(address);
+        p.add(new JLabel("电话")); p.add(lblPhone);
+        p.add(new JLabel("邮箱")); p.add(lblEmail);
+        p.add(new JLabel("地址")); p.add(lblAddress);
 
         /* 关闭按钮 */
         JButton closeBtn = new JButton("关闭");
@@ -54,8 +66,8 @@ public class StudentDetailDialog extends JPanel {
             if (onClose != null) onClose.run();
         });
 
-        /* 管理员可编辑 */
-        boolean isAdmin = true; // 实际应按登录用户角色判断
+        /* 管理员可编辑（按当前登录用户角色，非硬编码） */
+        boolean isAdmin = user != null && "admin".equalsIgnoreCase(user.getType());
         JPanel south = new JPanel();
         if (isAdmin) {
             JButton editBtn = new JButton("编辑基本信息");
@@ -68,6 +80,24 @@ public class StudentDetailDialog extends JPanel {
         add(south, BorderLayout.SOUTH);
     }
 
+    /** 保存后就地刷新字段值，避免重建整个面板（含 controller）。 */
+    private void refreshView(Student fresh) {
+        this.student = fresh;
+        lblStudentId.setText(fresh.getStudentId());
+        lblName.setText(fresh.getStudentName());
+        lblSex.setText(fresh.getSex());
+        lblIdentity.setText(fresh.getIdentity());
+        lblUserId.setText(fresh.getUserId());
+        StudentPersonal sp = fresh.getPersonal();
+        lblPhone.setText(sp != null ? nz(sp.getPhone()) : "未填写");
+        lblEmail.setText(sp != null ? nz(sp.getEmail()) : "未填写");
+        lblAddress.setText(sp != null ? nz(sp.getAddress()) : "未填写");
+        revalidate();
+        repaint();
+    }
+
+    private static String nz(String s) { return s == null ? "" : s; }
+
     /* ---------------------- 管理员编辑 ---------------------- */
     private void openEdit() {
         StudentPersonal old = student.getPersonal();
@@ -76,26 +106,14 @@ public class StudentDetailDialog extends JPanel {
         StudentPersonal finalOld = old;
         new EditPersonalDialog(SwingUtilities.getWindowAncestor(this), finalOld, ok -> {
             if (ok) {
-                // 重新查询最新数据并刷新本窗口
+                // 重新查询最新数据并就地刷新本面板（不再重建整个面板与 controller）
                 Student fresh = new StudentController().getStudent(student.getStudentId());
                 if (fresh != null) {
-                    removeAll();
-                    revalidate();
-                    repaint();
-                    new StudentDetailDialog(fresh, parentRefresh, onClose)
-                            .renderInto(this);
+                    refreshView(fresh);
                     if (parentRefresh != null) parentRefresh.run(); // 刷新主表
                 }
             }
         }).setVisible(true);
-    }
-
-    /**
-     * 把新的 StudentDetailPanel 渲染到当前面板（避免外部重复写 add/remove）
-     */
-    private void renderInto(JPanel target) {
-        target.setLayout(new BorderLayout());
-        target.add(this, BorderLayout.CENTER);
     }
 
     /* ====================================================================== */

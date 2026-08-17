@@ -1,10 +1,13 @@
 package client.ui;
+import util.UITheme;
 
+import client.ai.AgentHooksFactory;
 import client.net.ClientSocket;
 import common.model.Student;
 import common.model.User;
 import common.net.Message;
 import common.net.MessageType;
+import util.FloatingAgentButton;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,6 +34,12 @@ public abstract class MainFrame extends JFrame {
     private Map<String, Supplier<JPanel>> moduleSuppliers = new HashMap<>();
     private Map<String, JPanel> loadedModules = new HashMap<>();
 
+    // 全局 AI 助理：当前模块名 + 浮动按钮 + 复用对话窗
+    private String currentModule = "Welcome";
+    private FloatingAgentButton.Handle fabHandle;
+    private JDialog agentDialog;
+    private AgentPanel agentPanel;
+
 
     public MainFrame(User user) {
         this.user = user;
@@ -45,11 +54,19 @@ public abstract class MainFrame extends JFrame {
             String studentId = findStudentIdByUserId(user.getUserId());
             if (studentId != null) this.student = findStudentById(studentId);
         }
+    }
+
+    /**
+     * 构建侧边栏与主内容区（含各角色功能模块按钮）。
+     * 抽成独立方法，避免在父类构造器中调用可重写的 {@code addModuleButtons()}（构造器反模式）。
+     * 子类构造器须在 {@code super(user)} 之后调用本方法。
+     */
+    protected final void buildSidebar() {
 
         // ================= 左侧侧边栏 =================
         sideBar = new JPanel();
         sideBar.setLayout(new BoxLayout(sideBar, BoxLayout.Y_AXIS));
-        sideBar.setBackground(new Color(84, 113, 232));
+        sideBar.setBackground(UITheme.PRIMARY);
         sideBar.setPreferredSize(new Dimension(60, getHeight()));
         sideBar.addMouseListener(sidebarHoverListener);
 
@@ -72,10 +89,12 @@ public abstract class MainFrame extends JFrame {
 
         // 固定按钮
         JButton homeBtn = createSideButton("首页", "/pictures/首页.png");
+        homeBtn.setToolTipText("返回首页");
         homeBtn.addActionListener(e -> showModule("Welcome"));
         registerFixedButton("首页", homeBtn);
 
         JButton infoBtn = createSideButton("个人信息", "/pictures/个人.png");
+        infoBtn.setToolTipText("查看与编辑个人信息");
         infoBtn.addActionListener(e -> showPersonalInfo());
         registerFixedButton("个人信息", infoBtn);
 
@@ -84,7 +103,6 @@ public abstract class MainFrame extends JFrame {
         // ================= 主内容面板 =================
         cardLayout = new CardLayout();
         mainPanel = new JPanel(cardLayout);
-        add(mainPanel, BorderLayout.CENTER);
 
         // 欢迎页
         JPanel homePanel = new JPanel(new BorderLayout());
@@ -98,10 +116,21 @@ public abstract class MainFrame extends JFrame {
         // 功能模块按钮
         addModuleButtons();
 
+        // 全局 AI 助理浮动按钮：叠在 mainPanel 上，放右下角
+        fabHandle = FloatingAgentButton.attach(
+                mainPanel,
+                this::openAgent,
+                loadBotIcon(),
+                64,   // 按钮尺寸
+                16    // 边距
+        );
+        add(fabHandle.layeredPane, BorderLayout.CENTER);
+
         // 底部退出按钮
         sideBar.add(Box.createVerticalGlue());
         JButton logoutBtn = createSideButton("退出登录", "/pictures/退出.png");
-        logoutBtn.setBackground(new Color(220, 53, 69));
+        logoutBtn.setToolTipText("退出当前账号，返回登录界面");
+        logoutBtn.setBackground(UITheme.DANGER);
         logoutBtn.setForeground(Color.WHITE);
         logoutBtn.setFocusPainted(false);
         logoutBtn.setOpaque(true);
@@ -109,7 +138,7 @@ public abstract class MainFrame extends JFrame {
             @Override
             public void mouseEntered(MouseEvent e) { logoutBtn.setBackground(new Color(200, 40, 55)); }
             @Override
-            public void mouseExited(MouseEvent e) { logoutBtn.setBackground(new Color(220, 53, 69)); }
+            public void mouseExited(MouseEvent e) { logoutBtn.setBackground(UITheme.DANGER); }
         });
         logoutBtn.addActionListener(e -> logout());
         registerFixedButton("退出登录", logoutBtn);
@@ -125,7 +154,7 @@ public abstract class MainFrame extends JFrame {
         btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
         btn.setAlignmentX(Component.CENTER_ALIGNMENT);
         btn.setFont(new Font("微软雅黑", Font.PLAIN, 14));
-        btn.setBackground(new Color(84, 113, 232));
+        btn.setBackground(UITheme.PRIMARY);
         btn.setForeground(Color.WHITE);
         btn.setFocusPainted(false);
         btn.setBorderPainted(false);
@@ -133,12 +162,12 @@ public abstract class MainFrame extends JFrame {
         btn.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent evt) {
-                btn.setBackground(new Color(100, 130, 240));
+                btn.setBackground(UITheme.PRIMARY_HOVER);
             }
 
             @Override
             public void mouseExited(MouseEvent evt) {
-                btn.setBackground(new Color(84, 113, 232));
+                btn.setBackground(UITheme.PRIMARY);
             }
         });
 
@@ -148,9 +177,6 @@ public abstract class MainFrame extends JFrame {
 
     /** 子类实现：添加功能模块按钮 */
     protected abstract void addModuleButtons();
-
-    /** 子类实现：添加功能模块菜单项 */
-    protected abstract void addModuleMenu(JMenu systemMenu);
 
     /** 注册一个功能模块（支持收起/展开时隐藏文字） */
 
@@ -185,6 +211,7 @@ public abstract class MainFrame extends JFrame {
     /** 懒加载切换模块 */
     //@Override
     protected void showModule(String name) {
+        this.currentModule = name;
         // 如果还没真正加载，就创建一次
         if (!loadedModules.containsKey(name)) {
             Supplier<JPanel> supplier = moduleSuppliers.get(name);
@@ -199,6 +226,30 @@ public abstract class MainFrame extends JFrame {
         highlightButton(name);
     }
 
+    /** 打开全局 AI 助理对话窗（modeless，按当前模块自动切换 hooks）。 */
+    private void openAgent() {
+        if (agentDialog == null) {
+            agentDialog = new JDialog(this, "智能助理", false);
+            agentDialog.setDefaultCloseOperation(JDialog.HIDE_ON_CLOSE);
+            agentDialog.setSize(460, 620);
+            agentDialog.setLocationRelativeTo(this);
+            agentPanel = new AgentPanel(user, "校园助理",
+                    AgentHooksFactory.forContext(user, currentModule));
+            agentDialog.setContentPane(agentPanel);
+        }
+        // 每次打开按当前模块切换上下文（切模块即清记忆）
+        agentPanel.setTitle(AgentHooksFactory.titleFor(currentModule));
+        agentPanel.setHooks(AgentHooksFactory.forContext(user, currentModule));
+        agentDialog.setVisible(true);
+    }
+
+    /** 加载机器人图标，失败返回 null（FloatingAgentButton 会用 emoji 兜底）。 */
+    private Icon loadBotIcon() {
+        java.net.URL url = getClass().getResource("/pictures/robot.png");
+        if (url != null) return new ImageIcon(url);
+        return null;
+    }
+
     /** 高亮当前按钮 */
     private void highlightButton(String activeName) {
         for (Map.Entry<String, JButton> entry : moduleButtons.entrySet()) {
@@ -206,7 +257,7 @@ public abstract class MainFrame extends JFrame {
             if (entry.getKey().equals(activeName)) {
                 btn.setBackground(new Color(100, 149, 237));
             } else {
-                btn.setBackground(new Color(84, 113, 232));
+                btn.setBackground(UITheme.PRIMARY);
             }
         }
     }
@@ -216,6 +267,7 @@ public abstract class MainFrame extends JFrame {
     }
 
     protected void logout() {
+        util.ClientSession.logout(); // 清会话
         dispose();
         new LoginFrame().setVisible(true); // 返回登录界面
     }
@@ -240,7 +292,7 @@ public abstract class MainFrame extends JFrame {
     protected String findStudentIdByUserId(String userId) {
         try {
             Message req = new Message(MessageType.STUDENT_ID_BY_USERID, userId);
-            Message resp = new ClientSocket().sendRequest(req);
+            Message resp = ClientSocket.getInstance().sendRequest(req);
             if ("success".equals(resp.getStatus())) {
                 return (String) resp.getData();
             }
@@ -254,7 +306,7 @@ public abstract class MainFrame extends JFrame {
     protected Student findStudentById(String studentId) {
         try {
             Message req = new Message(MessageType.STUDENT_GET, studentId);
-            Message resp = new ClientSocket().sendRequest(req);
+            Message resp = ClientSocket.getInstance().sendRequest(req);
             if ("success".equals(resp.getStatus())) {
                 return (Student) resp.getData();
             }

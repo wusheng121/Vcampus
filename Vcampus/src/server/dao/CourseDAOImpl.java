@@ -10,7 +10,9 @@ import util.DBUtil;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CourseDAOImpl implements CourseDAO {
 
@@ -120,6 +122,47 @@ public class CourseDAOImpl implements CourseDAO {
             e.printStackTrace();
         }
         return list;
+    }
+
+    @Override
+    public List<LessonTime> listAllLessonTimes() {
+        String sql = "SELECT time_id, lesson_id, day_of_week, start_sec, end_sec, location " +
+                     "FROM lesson_time ORDER BY lesson_id, day_of_week, start_sec";
+        List<LessonTime> list = new ArrayList<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                LessonTime t = new LessonTime();
+                t.setTimeId(rs.getInt("time_id"));
+                t.setLessonId(rs.getInt("lesson_id"));
+                t.setDayOfWeek(rs.getInt("day_of_week"));
+                t.setStartSec(rs.getInt("start_sec"));
+                t.setEndSec(rs.getInt("end_sec"));
+                t.setLocation(rs.getString("location"));
+                list.add(t);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    @Override
+    public Map<Integer, Integer> countEnrolledForAll() {
+        String sql = "SELECT lesson_id, COUNT(*) AS cnt FROM enrollment " +
+                     "WHERE status = 'enrolled' GROUP BY lesson_id";
+        Map<Integer, Integer> map = new HashMap<>();
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                map.put(rs.getInt("lesson_id"), rs.getInt("cnt"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return map;
     }
 
     // ---------- helpers ----------

@@ -27,48 +27,44 @@ public class OrderService {
             if (userId == null || userId.trim().isEmpty()) {
                 throw new IllegalArgumentException("用户ID不能为空");
             }
-
             if (items == null || items.isEmpty()) {
                 throw new IllegalArgumentException("订单商品不能为空");
             }
 
-            // 2. 检查库存
-            Map<String, Integer> insufficientItems = new HashMap<>();
+            // 2. 原子预扣库存：仅当库存足够才扣减（WHERE stock>=?），消除"先查后扣"的 TOCTOU 超卖
+            //    任一项扣减失败（含并发竞态败）即回滚已扣减项
+            List<OrderItem> decremented = new ArrayList<>();
             for (OrderItem item : items) {
-                Product product = productDAO.findProductById(item.getProductId());
-                if (product == null) {
-                    throw new IllegalArgumentException("商品不存在: " + item.getProductId());
+                if (!productDAO.decrementStock(item.getProductId(), item.getQuantity())) {
+                    for (OrderItem d : decremented) {
+                        productDAO.updateStock(d.getProductId(), d.getQuantity());
+                    }
+                    throw new RuntimeException("库存不足: " + item.getProductId());
                 }
-                if (product.getStock() < item.getQuantity()) {
-                    insufficientItems.put(product.getName(),
-                            item.getQuantity() - product.getStock());
-                }
+                decremented.add(item);
             }
 
-
-
-            // 3. 创建订单
+            // 3. 创建订单与订单项；失败则恢复全部预扣库存
             String orderId = generateOrderId();
             Order order = new Order(orderId, userId, calculateTotal(items), "待支付");
-
-            if (!orderDAO.createOrder(order)) {
-                throw new RuntimeException("创建订单记录失败");
-            }
-
-
-
-            // 4. 添加订单项并扣减库存
-            for (OrderItem item : items) {
-                item.setOrderId(orderId);
-
-                if (!productDAO.updateStock(item.getProductId(), -item.getQuantity())) {
-                    throw new RuntimeException("更新库存失败: " + item.getProductId());
+            try {
+                if (!orderDAO.createOrder(order)) {
+                    throw new RuntimeException("创建订单记录失败");
                 }
+                for (OrderItem item : items) {
+                    item.setOrderId(orderId);
+                    if (!orderDAO.addOrderItem(item)) {
+                        throw new RuntimeException("添加订单项失败: " + item.getProductId());
+                    }
+                }
+                return true;
+            } catch (Exception e) {
+                for (OrderItem d : decremented) {
+                    productDAO.updateStock(d.getProductId(), d.getQuantity());
+                }
+                throw e;
             }
-
-            return true;
         } catch (Exception e) {
-            // 记录详细错误日志
             System.err.println("订单创建失败: " + e.getMessage());
             e.printStackTrace();
             throw e; // 传播异常以便客户端获取

@@ -1,4 +1,5 @@
 package client.controller;
+import common.net.MessageType;
 
 import client.net.ClientSocket;
 import common.model.Journal;
@@ -18,7 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class JournalController {
-    private ClientSocket clientSocket = new ClientSocket();
+    private ClientSocket clientSocket = ClientSocket.getInstance();
 
     // 缓存 arXiv 结果
     private List<Journal> cachedArxiv = null;
@@ -29,7 +30,7 @@ public class JournalController {
     public List<Journal> getAllJournals() {
         try {
             Message request = new Message();
-            request.setType("getAllJournals");
+            request.setType(MessageType.GET_ALL_JOURNALS);
 
             Message response = clientSocket.sendRequest(request);
             if ("success".equals(response.getStatus())) {
@@ -48,7 +49,7 @@ public class JournalController {
     public Journal getJournalById(int journalId) {
         try {
             Message request = new Message();
-            request.setType("getJournalById");
+            request.setType(MessageType.GET_JOURNAL_BY_ID);
             request.setData(journalId);
 
             Message response = clientSocket.sendRequest(request);
@@ -68,7 +69,7 @@ public class JournalController {
     public boolean addJournal(Journal journal) {
         try {
             Message request = new Message();
-            request.setType("addJournal");
+            request.setType(MessageType.ADD_JOURNAL);
             request.setData(journal);
 
             Message response = clientSocket.sendRequest(request);
@@ -83,7 +84,7 @@ public class JournalController {
     public boolean updateJournal(Journal journal) {
         try {
             Message request = new Message();
-            request.setType("updateJournal");
+            request.setType(MessageType.UPDATE_JOURNAL);
             request.setData(journal);
 
             Message response = clientSocket.sendRequest(request);
@@ -98,7 +99,7 @@ public class JournalController {
     public boolean deleteJournal(int journalId) {
         try {
             Message request = new Message();
-            request.setType("deleteJournal");
+            request.setType(MessageType.DELETE_JOURNAL);
             request.setData(journalId);
 
             Message response = clientSocket.sendRequest(request);

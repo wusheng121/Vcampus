@@ -1,4 +1,6 @@
 package client.ui;
+import util.EmptyState;
+import util.UITheme;
 
 import client.controller.BookController;
 import common.model.Book;
@@ -12,8 +14,9 @@ import java.awt.*;
 import java.util.List;
 
 public class BookManagePanel extends JPanel {
-    private DefaultTableModel tableModel;
-    private JTable table;
+private DefaultTableModel tableModel;
+private JTable table;
+private JScrollPane tableScroll;
     private BookController bookController = new BookController();
 
     public BookManagePanel() {
@@ -22,13 +25,13 @@ public class BookManagePanel extends JPanel {
         // 顶部栏
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton addBtn = new JButton("新增");
-        addBtn.setBackground(new Color(70, 130, 180));
+        addBtn.setBackground(UITheme.HEADER);
         addBtn.setForeground(Color.WHITE);
         addBtn.setFocusPainted(false);
         addBtn.setOpaque(true);
         JTextField searchField = new JTextField(20);
         JButton searchBtn = new JButton("查询");
-        searchBtn.setBackground(new Color(70, 130, 180));
+        searchBtn.setBackground(UITheme.HEADER);
         searchBtn.setForeground(Color.WHITE);
         searchBtn.setFocusPainted(false);
         searchBtn.setOpaque(true);
@@ -50,16 +53,16 @@ public class BookManagePanel extends JPanel {
         table.setRowHeight(30);
         table.getTableHeader().setReorderingAllowed(false);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180)); // 钢蓝色
+        header.setBackground(UITheme.HEADER); // 钢蓝色
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add((tableScroll = new JScrollPane(table)), BorderLayout.CENTER);
 
         // 渲染器 & 编辑器
-        table.getColumnModel().getColumn(7).setCellRenderer(new ButtonRenderer("修改", new Color(40, 167, 69), Color.WHITE));
-        table.getColumnModel().getColumn(7).setCellEditor(new ButtonEditor("修改", table, e -> onEdit(), new Color(40, 167, 69), Color.WHITE));
-        table.getColumnModel().getColumn(8).setCellRenderer(new ButtonRenderer("删除", new Color(220, 53, 69), Color.WHITE));
-        table.getColumnModel().getColumn(8).setCellEditor(new ButtonEditor("删除", table, e -> onDelete(), new Color(220, 53, 69), Color.WHITE));
+        table.getColumnModel().getColumn(7).setCellRenderer(new ButtonRenderer("修改", UITheme.SUCCESS, Color.WHITE));
+        table.getColumnModel().getColumn(7).setCellEditor(new ButtonEditor("修改", table, e -> onEdit(), UITheme.SUCCESS, Color.WHITE));
+        table.getColumnModel().getColumn(8).setCellRenderer(new ButtonRenderer("删除", UITheme.DANGER, Color.WHITE));
+        table.getColumnModel().getColumn(8).setCellEditor(new ButtonEditor("删除", table, e -> onDelete(), UITheme.DANGER, Color.WHITE));
 
         // 按钮事件
         addBtn.addActionListener(e -> onAdd());
@@ -78,6 +81,7 @@ public class BookManagePanel extends JPanel {
                     b.getBorrowers(), "修改", "删除"
             });
         }
+        EmptyState.updateEmptyState(tableScroll, table);
     }
 
     private void onAdd() {

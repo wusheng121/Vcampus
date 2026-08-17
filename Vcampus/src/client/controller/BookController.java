@@ -1,4 +1,5 @@
 package client.controller;
+import common.net.MessageType;
 
 import client.net.ClientSocket;
 import common.model.Book;
@@ -8,88 +9,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BookController {
-    private ClientSocket clientSocket = new ClientSocket();
+    private ClientSocket clientSocket = ClientSocket.getInstance();
 
     // 查询所有书籍
     public List<Book> getAllBooks() {
         try {
             Message request = new Message();
-            request.setType("findAllBooks");
+            request.setType(MessageType.FIND_ALL_BOOKS);
 
             Message response = clientSocket.sendRequest(request);
             if ("success".equals(response.getStatus())) {
                 return (List<Book>) response.getData();
             } else {
                 System.out.println("查询所有书籍失败：" + response.getMsg());
-                return null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    // 根据书名查询书籍
-    public Book findBookByName(String bookName) {
-        try {
-            Book book = new Book();
-            book.setBookName(bookName);
-
-            Message request = new Message();
-            request.setType("findBookByName");
-            request.setData(book);
-
-            Message response = clientSocket.sendRequest(request);
-            if ("success".equals(response.getStatus())) {
-                return (Book) response.getData();
-            } else {
-                System.out.println("按书名查询失败：" + response.getMsg());
-                return null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    // 根据作者查询书籍
-    public Book findBookByAuthor(String author) {
-        try {
-            Book book = new Book();
-            book.setAuthor(author);
-
-            Message request = new Message();
-            request.setType("findBookByAuthor");
-            request.setData(book);
-
-            Message response = clientSocket.sendRequest(request);
-            if ("success".equals(response.getStatus())) {
-                return (Book) response.getData();
-            } else {
-                System.out.println("按作者查询失败：" + response.getMsg());
-                return null;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    // 根据ID查询书籍
-    public Book findBookById(String bookId) {
-        try {
-            Book book = new Book();
-            book.setBookId(bookId);
-
-            Message request = new Message();
-            request.setType("findBookById");
-            request.setData(book);
-
-            Message response = clientSocket.sendRequest(request);
-            if ("success".equals(response.getStatus())) {
-                return (Book) response.getData();
-            } else {
-                System.out.println("按ID查询失败：" + response.getMsg());
                 return null;
             }
         } catch (Exception e) {
@@ -106,7 +38,7 @@ public class BookController {
             book.setTheme(category);
 
             Message request = new Message();
-            request.setType("findBooksByCategory");
+            request.setType(MessageType.FIND_BOOKS_BY_CATEGORY);
             request.setData(book);
 
             Message response = clientSocket.sendRequest(request);
@@ -128,7 +60,7 @@ public class BookController {
     public boolean addBook(Book book) {
         try {
             Message request = new Message();
-            request.setType("addBook");
+            request.setType(MessageType.ADD_BOOK);
             request.setData(book);
 
             Message response = clientSocket.sendRequest(request);
@@ -146,7 +78,7 @@ public class BookController {
             book.setBookId(bookId);
 
             Message request = new Message();
-            request.setType("deleteBook");
+            request.setType(MessageType.DELETE_BOOK);
             request.setData(book);
 
             Message response = clientSocket.sendRequest(request);
@@ -164,7 +96,7 @@ public class BookController {
             newBook.setBookId(bookId);
 
             Message request = new Message();
-            request.setType("updateBook");
+            request.setType(MessageType.UPDATE_BOOK);
             request.setData(newBook);
 
             Message response = clientSocket.sendRequest(request);
@@ -179,7 +111,7 @@ public class BookController {
     public List<String> getAllCategories() {
         try {
             Message request = new Message();
-            request.setType("getAllCategories");
+            request.setType(MessageType.GET_ALL_CATEGORIES);
 
             Message response = clientSocket.sendRequest(request);
             if ("success".equals(response.getStatus())) {

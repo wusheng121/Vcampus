@@ -1,0 +1,26 @@
+# --- 构建产物 ---
+target/
+**/target/
+*.class
+
+# --- IDE ---
+*.iml
+*.ipr
+*.iws
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+
+# --- 敏感配置（每个开发者本地填写，不提交） ---
+**/config.properties
+
+# --- 日志/临时 ---
+*.log
+logs/
+*.tmp
+
+# --- 系统 ---
+Thumbs.db
+.DS_Store

@@ -1,7 +1,7 @@
 package client.ui;
+import util.UITheme;
 
 import common.model.User;
-import util.FloatingAgentButton;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,10 +14,6 @@ public class LibraryFrame extends JPanel {
     private JPanel contentPanel;
     private CardLayout cardLayout;
     private HashMap<String, JPanel> moduleMap = new HashMap<>();
-    // 新增：智能客服相关
-    private JButton fab;
-    private FloatingAgentButton.Handle fabHandle; // 悬浮按钮句柄
-    private client.ui.AgentPanel agentPanel;
 
     public LibraryFrame(User user) {
         this.user=user;
@@ -40,7 +36,7 @@ public class LibraryFrame extends JPanel {
 
         for (String name : modules) {
             JButton btn = new JButton(name);
-            btn.setBackground(new Color(84, 113, 232));
+            btn.setBackground(UITheme.PRIMARY);
             btn.setForeground(new Color(255, 255, 255));
             btn.addActionListener(e -> showModule(name));
             btnPanel.add(btn);
@@ -136,18 +132,8 @@ public class LibraryFrame extends JPanel {
         }
 
         cardLayout.show(contentPanel, name);
-
-        if (fab != null) {
-            fab.setVisible(!"agent".equals(name));
-        }
     }
 
-
-// + 新增：加载机器人图标（可选）
-private Icon loadBotIcon() {
-    java.net.URL url = getClass().getResource("/pictures/robot.png");
-    return url != null ? new ImageIcon(url) : null;
-}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));

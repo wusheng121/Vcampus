@@ -3,6 +3,8 @@ package client.ui;
 import client.controller.StudentController;
 import common.model.Student;
 import common.model.StudentPersonalAudit;
+import common.model.User;
+import util.EmptyState;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -23,10 +25,12 @@ public class StudentMgrDialog extends JPanel {
 
     /* ---------- 控制器 ---------- */
     private final StudentController controller = new StudentController();
+    private final User user;
 
     /* ---------- 表格模型 ---------- */
     private final StudentTableModel tableModel = new StudentTableModel();
     private final JTable table = new JTable(tableModel);
+    private final JScrollPane tableScroll = new JScrollPane(table);
 
     /* ---------- 按钮 ---------- */
     private final JButton btnAdd    = new JButton("增加");
@@ -37,8 +41,12 @@ public class StudentMgrDialog extends JPanel {
     /* ---------- 搜索栏 ---------- */
     private final JTextField searchField = new JTextField(15);
     private final JButton    searchBtn   = new JButton("🔍");
+    /** 搜索防抖：停打 300ms 后才发请求，避免每键一次 socket 调用 */
+    private final Timer searchTimer = new Timer(300, e -> filter());
+    { searchTimer.setRepeats(false); }
 
-    public StudentMgrDialog() {
+    public StudentMgrDialog(User user) {
+        this.user = user;
         setLayout(new BorderLayout());
 
         initTable();
@@ -76,6 +84,7 @@ public class StudentMgrDialog extends JPanel {
 
                         StudentDetailDialog detailPanel = new StudentDetailDialog(
                                 stu,
+                                user,
                                 () -> refreshTable(),
                                 dialog::dispose // 点击关闭按钮时关闭窗口
                         );
@@ -87,7 +96,7 @@ public class StudentMgrDialog extends JPanel {
         });
 
 
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add(tableScroll, BorderLayout.CENTER);
     }
 
     /* ========================== 搜索栏 ========================== */
@@ -98,9 +107,9 @@ public class StudentMgrDialog extends JPanel {
         north.add(searchBtn);
 
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { filter(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e)  { filter(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { filter(); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { searchTimer.restart(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { searchTimer.restart(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { searchTimer.restart(); }
         });
         searchBtn.addActionListener(e -> filter());
 
@@ -112,6 +121,7 @@ public class StudentMgrDialog extends JPanel {
         List<Student> all = controller.getAllStudents();
         if (key.isEmpty()) {
             tableModel.setData(all);
+            EmptyState.updateEmptyState(tableScroll, table, "暂无学生");
             return;
         }
         List<Student> filtered = new ArrayList<>();
@@ -124,6 +134,7 @@ public class StudentMgrDialog extends JPanel {
             }
         }
         tableModel.setData(filtered);
+        EmptyState.updateEmptyState(tableScroll, table, "无匹配学生");
     }
 
     /* ========================== 按钮条 ========================== */
@@ -297,12 +308,20 @@ public class StudentMgrDialog extends JPanel {
             JButton btnSave   = new JButton("保存");
             JButton btnCancel = new JButton("取消");
             btnSave.addActionListener(e -> {
-                Student stu = new Student(
-                        tfId.getText().trim(),
-                        tfName.getText().trim(),
-                        (String) cbSex.getSelectedItem(),
-                        tfIdentity.getText().trim(),
-                        tfUserId.getText().trim());
+                String id = tfId.getText().trim();
+                String name = tfName.getText().trim();
+                String identity = tfIdentity.getText().trim();
+                String userId = tfUserId.getText().trim();
+                if (!util.Validators.nonEmpty(id) || !util.Validators.nonEmpty(name)
+                        || !util.Validators.nonEmpty(userId)) {
+                    JOptionPane.showMessageDialog(this, "学号/姓名/一卡通号不能为空", "提示", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                if (!util.Validators.isIdentity(identity)) {
+                    JOptionPane.showMessageDialog(this, "身份证号格式不正确（需 18 位，末位可为 X）", "提示", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                Student stu = new Student(id, name, (String) cbSex.getSelectedItem(), identity, userId);
                 callback.accept(stu);
                 dispose();
             });

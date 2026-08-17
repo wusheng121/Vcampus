@@ -1,4 +1,5 @@
 package client.controller;
+import common.net.MessageType;
 
 import client.net.ClientSocket;
 import common.model.PasswordDTO;
@@ -9,7 +10,7 @@ import java.util.List;
 
 @SuppressWarnings("unchecked")
 public class UserController {
-    private ClientSocket clientSocket = new ClientSocket();
+    private ClientSocket clientSocket = ClientSocket.getInstance();
 
     // 登录
     public Message login(String userId, String password) {
@@ -19,7 +20,7 @@ public class UserController {
             user.setPassword(password);
 
             Message request = new Message();
-            request.setType("login");
+            request.setType(MessageType.LOGIN);
             request.setData(user);
 
             return clientSocket.sendRequest(request);
@@ -36,7 +37,7 @@ public class UserController {
     public List<User> getAllUsers() {
         try {
             Message request = new Message();
-            request.setType("getAllUsers");
+            request.setType(MessageType.GET_ALL_USERS);
 
             Message response = clientSocket.sendRequest(request);
             if ("success".equals(response.getStatus())) {
@@ -52,7 +53,7 @@ public class UserController {
     public boolean addUser(User user) {
         try {
             Message request = new Message();
-            request.setType("addUser");
+            request.setType(MessageType.ADD_USER);
             request.setData(user);
 
             Message response = clientSocket.sendRequest(request);
@@ -67,7 +68,7 @@ public class UserController {
     public boolean updateUser(User user) {
         try {
             Message request = new Message();
-            request.setType("updateUser");
+            request.setType(MessageType.UPDATE_USER);
             request.setData(user);
 
             Message response = clientSocket.sendRequest(request);
@@ -83,7 +84,7 @@ public class UserController {
         try {
             PasswordDTO dto = new PasswordDTO(userId, oldPwd, newPwd);
             Message req = new Message();
-            req.setType("updatePassword"); // 使用不同的消息类型
+            req.setType(MessageType.UPDATE_PASSWORD); // 使用不同的消息类型
             req.setData(dto);
 
             System.out.println("[CLI] 发送 updatePassword 请求");
@@ -101,7 +102,7 @@ public class UserController {
     public boolean deleteUser(String userId) {
         try {
             Message request = new Message();
-            request.setType("deleteUser");
+            request.setType(MessageType.DELETE_USER);
             request.setData(userId);
 
             Message response = clientSocket.sendRequest(request);
@@ -116,7 +117,7 @@ public class UserController {
     public List<User> searchUsers(String keyword) {
         try {
             Message request = new Message();
-            request.setType("searchUsers");
+            request.setType(MessageType.SEARCH_USERS);
             request.setData(keyword);
 
             Message response = clientSocket.sendRequest(request);
@@ -133,7 +134,7 @@ public class UserController {
     public List<User> findUsersByRole(String role) {
         try {
             Message request = new Message();
-            request.setType("findUsersByRole");
+            request.setType(MessageType.FIND_USERS_BY_ROLE);
             request.setData(role);
 
             Message response = clientSocket.sendRequest(request);
@@ -144,5 +145,35 @@ public class UserController {
             e.printStackTrace();
         }
         return null;
+    }
+
+    // ========================= 找回密码 =========================
+
+    /** 请求发送验证码到注册邮箱。返回服务端提示文案。 */
+    public String requestPasswordReset(String userIdOrEmail) {
+        try {
+            Message request = new Message();
+            request.setType(MessageType.REQUEST_PASSWORD_RESET);
+            request.setData(userIdOrEmail);
+            Message response = clientSocket.sendRequest(request);
+            return response.getMsg();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "请求失败：" + e.getMessage();
+        }
+    }
+
+    /** 用验证码重置密码。返回服务端结果（success=成功）。 */
+    public String resetPassword(String userIdOrEmail, String code, String newPassword) {
+        try {
+            Message request = new Message();
+            request.setType(MessageType.RESET_PASSWORD);
+            request.setData(new Object[]{userIdOrEmail, code, newPassword});
+            Message response = clientSocket.sendRequest(request);
+            return "success".equals(response.getStatus()) ? "success" : response.getMsg();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "请求失败：" + e.getMessage();
+        }
     }
 }

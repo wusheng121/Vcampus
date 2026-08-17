@@ -2,7 +2,6 @@ package server.dao;
 
 import common.model.User;
 import util.DBUtil;
-import util.EncryptUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,7 +17,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public User findUserById(String userId) {
         User user = null;
-        String sql = "SELECT user_id, password, role, name, email, created_at FROM user WHERE user_id=?";
+        String sql = "SELECT user_id, password, role, name, email, phone, address, created_at FROM user WHERE user_id=?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -35,16 +34,36 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
+    public User findUserByEmail(String email) {
+        User user = null;
+        String sql = "SELECT user_id, password, role, name, email, phone, address, created_at FROM user WHERE email=?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    user = mapRow(rs);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return user;
+    }
+
+    @Override
     public boolean addUser(User user) {
-        String sql = "INSERT INTO user(user_id, password, role, name, email) VALUES(?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO user(user_id, password, role, name, email, phone, address) VALUES(?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, user.getUserId());
-            ps.setString(2, EncryptUtil.sha256(user.getPassword()));
+            ps.setString(2, user.getPassword());   // 密码由 Service 层哈希后传入，DAO 只负责存储
             ps.setString(3, user.getType());
             ps.setString(4, user.getName());
             ps.setString(5, user.getEmail());
+            ps.setString(6, user.getPhone());
+            ps.setString(7, user.getAddress());
 
             int rows = ps.executeUpdate();
             return rows > 0;
@@ -79,14 +98,16 @@ public class UserDAOImpl implements UserDAO {
     // ✅ 新增：修改用户信息（不含密码）
     @Override
     public boolean updateUser(User user) {
-        String sql = "UPDATE user SET role=?, name=?, email=? WHERE user_id=?";
+        String sql = "UPDATE user SET role=?, name=?, email=?, phone=?, address=? WHERE user_id=?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, user.getType());
             ps.setString(2, user.getName());
             ps.setString(3, user.getEmail());
-            ps.setString(4, user.getUserId());
+            ps.setString(4, user.getPhone());
+            ps.setString(5, user.getAddress());
+            ps.setString(6, user.getUserId());
 
             int rows = ps.executeUpdate();
             return rows > 0;
@@ -117,7 +138,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public List<User> findAllUsers() {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT user_id, password, role, name, email, created_at FROM user";
+        String sql = "SELECT user_id, password, role, name, email, phone, address, created_at FROM user";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -135,7 +156,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public List<User> searchUsers(String keyword) {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT user_id, password, role, name, email ,created_at FROM user " +
+        String sql = "SELECT user_id, password, role, name, email, phone, address, created_at FROM user " +
                 "WHERE user_id LIKE ? OR name LIKE ? OR email LIKE ?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -160,7 +181,7 @@ public class UserDAOImpl implements UserDAO {
     @Override
     public List<User> findUsersByRole(String role) {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT user_id, password, role, name, email , created_at FROM user WHERE role=?";
+        String sql = "SELECT user_id, password, role, name, email, phone, address, created_at FROM user WHERE role=?";
         try (Connection conn = DBUtil.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -184,6 +205,8 @@ public class UserDAOImpl implements UserDAO {
         user.setType(rs.getString("role"));
         user.setName(rs.getString("name"));
         user.setEmail(rs.getString("email"));
+        user.setPhone(rs.getString("phone"));
+        user.setAddress(rs.getString("address"));
 
 //        Timestamp ts = rs.getTimestamp("created_at");
 //        if (ts != null) {

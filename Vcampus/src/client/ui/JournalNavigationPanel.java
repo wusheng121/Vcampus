@@ -1,5 +1,6 @@
 // src/client/ui/JournalNavigationPanel.java
 package client.ui;
+import util.UITheme;
 
 import client.controller.JournalController;
 import common.model.Journal;
@@ -33,7 +34,7 @@ public class JournalNavigationPanel extends JPanel {
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         searchField = new JTextField(20);
         JButton searchBtn = new JButton("查询");
-        searchBtn.setBackground(new Color(70, 130, 180));
+        searchBtn.setBackground(UITheme.HEADER);
         searchBtn.setForeground(Color.WHITE);
         searchBtn.setFocusPainted(false);
         searchBtn.setOpaque(true);
@@ -63,7 +64,7 @@ public class JournalNavigationPanel extends JPanel {
         table.setRowHeight(30);
         table.getTableHeader().setReorderingAllowed(false);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180));
+        header.setBackground(UITheme.HEADER);
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
         add(new JScrollPane(table), BorderLayout.CENTER);

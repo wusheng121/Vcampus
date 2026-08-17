@@ -2,6 +2,7 @@ package client.ai;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import util.Config;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -12,27 +13,29 @@ import java.time.Duration;
 public class UseLlm {
     private final HttpClient client;
     private final String apiKey;
-    private final String model = "deepseek-chat";
+    private final String model;
+    private final String baseUrl;
 
     public UseLlm() {
-//        System.setProperty("https.proxyHost", "127.0.0.1");
-//        System.setProperty("https.proxyPort", "3288"); // VPN
-
-
         this.client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .build();
 
-        // CMD用环境变量存放：setx OPENAI_API_KEY "sk-xxxxxxx"
-        this.apiKey = "sk-xxxxxxx"; // TODO: 从环境变量读取
-//        if (this.apiKey == null || this.apiKey.isBlank()) {
-//            throw new RuntimeException("请先设置环境变量 OPENAI_API_KEY");
-//        }
+        // API key：优先环境变量 DEEPSEEK_API_KEY，其次 config.properties，最后留空
+        String key = System.getenv("DEEPSEEK_API_KEY");
+        if (key == null || key.isBlank()) {
+            key = Config.get("deepseek.api.key", "");
+        }
+        this.apiKey = key;
+
+        this.model = Config.get("deepseek.model", "deepseek-chat");
+        this.baseUrl = Config.get("deepseek.base-url", "https://api.deepseek.com/chat/completions");
     }
 
     /**
-     * 向 OpenAI Chat Completions API 发送请求
-     * @param messages 对话消息数组（包含 role/content）
+     * 向 DeepSeek Chat Completions API 发送请求
+     *
+     * @param messages 对话消息数组（含 role/content）
      */
     public String getResponse(JSONArray messages) throws Exception {
         JSONObject body = new JSONObject()
@@ -40,7 +43,7 @@ public class UseLlm {
                 .put("messages", messages);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.deepseek.com/chat/completions")) // 调用openai API url
+                .uri(URI.create(baseUrl))
                 .header("Content-Type", "application/json")
                 .header("Authorization", "Bearer " + apiKey)
                 .timeout(Duration.ofSeconds(60))
@@ -60,12 +63,24 @@ public class UseLlm {
         JSONObject message = choice0.getJSONObject("message");
         return message.optString("content", "");
     }
-//    public static void main(String[] args) {
-//    	
-//    }
 
-    public String chat(String string, Object history) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'chat'");
+    /**
+     * 便捷重载：单轮对话（可附带历史消息）。
+     *
+     * @param userMessage 本轮用户输入
+     * @param history     历史消息，建议为 JSONArray（每项含 role/content）；为 null 则忽略
+     */
+    public String chat(String userMessage, Object history) throws Exception {
+        JSONArray messages = new JSONArray();
+        if (history instanceof JSONArray arr) {
+            for (int i = 0; i < arr.length(); i++) {
+                Object o = arr.get(i);
+                if (o instanceof JSONObject) {
+                    messages.put(o);
+                }
+            }
+        }
+        messages.put(new JSONObject().put("role", "user").put("content", userMessage));
+        return getResponse(messages);
     }
 }

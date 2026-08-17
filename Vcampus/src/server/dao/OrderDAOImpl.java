@@ -141,7 +141,7 @@ public class OrderDAOImpl implements OrderDAO {
     public List<OrderItem> findOrderItemsByOrderId(String orderId) {
         List<OrderItem> items = new ArrayList<>();
         String sql = "SELECT oi.order_id, oi.product_id, oi.quantity, oi.price, p.name as product_name " +
-                "FROM order_item oi JOIN product p ON oi.product_id = p.product_id " +
+                "FROM order_items oi JOIN product p ON oi.product_id = p.product_id " +
                 "WHERE oi.order_id = ?";
 
         try (Connection conn = DBUtil.getConnection();

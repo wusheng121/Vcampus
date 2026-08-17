@@ -5,12 +5,12 @@ import common.model.StudentPersonal;
 import common.model.StudentPersonalAudit;
 import common.net.Message;
 import common.net.MessageType;
-import server.dao.StudentDAO;
+import server.dao.StudentDAOImpl;
 
 import java.util.ArrayList;
 import java.util.List;
 public class StudentController {
-private final ClientSocket client = new ClientSocket();
+private final ClientSocket client = ClientSocket.getInstance();
 public List<Student> getAllStudents() {
     try {
         Message req = new Message(MessageType.STUDENT_LIST, null);
@@ -125,12 +125,12 @@ public boolean saveOrUpdatePersonal(StudentPersonal sp) {
 }
 /** 弹出窗口用：获取个人基本信息 */
 public StudentPersonal getPersonal(String studentId) {
-    return new StudentDAO().getPersonal(studentId);
+    return new StudentDAOImpl().getPersonal(studentId);
 }
 
 /** 保存按钮用：保存个人基本信息 */
 public boolean savePersonal(StudentPersonal sp) {
-    return new StudentDAO().saveOrUpdatePersonal(sp);
+    return new StudentDAOImpl().saveOrUpdatePersonal(sp);
 }
 /** 用一卡通号反查学号 */
 public String findStudentIdByUserId(String userId) {

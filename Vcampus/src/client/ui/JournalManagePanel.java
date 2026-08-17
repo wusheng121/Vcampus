@@ -1,5 +1,7 @@
 // src/client/ui/JournalManagePanel.java
 package client.ui;
+import util.EmptyState;
+import util.UITheme;
 
 import client.controller.JournalController;
 import common.model.Journal;
@@ -13,8 +15,9 @@ import java.awt.*;
 import java.util.List;
 
 public class JournalManagePanel extends JPanel {
-    private DefaultTableModel tableModel;
-    private JTable table;
+private DefaultTableModel tableModel;
+private JTable table;
+private JScrollPane tableScroll;
     private JournalController controller = new JournalController();
 
     public JournalManagePanel() {
@@ -23,13 +26,13 @@ public class JournalManagePanel extends JPanel {
         // 顶部栏
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton addBtn = new JButton("新增");
-        addBtn.setBackground(new Color(70, 130, 180));
+        addBtn.setBackground(UITheme.HEADER);
         addBtn.setForeground(Color.WHITE);
         addBtn.setFocusPainted(false);
         addBtn.setOpaque(true);
         JTextField searchField = new JTextField(20);
         JButton searchBtn = new JButton("查询");
-        searchBtn.setBackground(new Color(70, 130, 180));
+        searchBtn.setBackground(UITheme.HEADER);
         searchBtn.setForeground(Color.WHITE);
         searchBtn.setFocusPainted(false);
         searchBtn.setOpaque(true);
@@ -52,10 +55,10 @@ public class JournalManagePanel extends JPanel {
         table.setRowHeight(30);
         table.getTableHeader().setReorderingAllowed(false);
         JTableHeader header = table.getTableHeader();
-        header.setBackground(new Color(70, 130, 180)); // 钢蓝色
+        header.setBackground(UITheme.HEADER); // 钢蓝色
         header.setForeground(Color.WHITE);
         header.setFont(new Font("微软雅黑", Font.BOLD, 14));
-        add(new JScrollPane(table), BorderLayout.CENTER);
+        add((tableScroll = new JScrollPane(table)), BorderLayout.CENTER);
 
         // 按钮渲染器和编辑器
         table.getColumnModel().getColumn(6).setCellRenderer(new ButtonRenderer("编辑", new Color(40,167,69), Color.WHITE));
@@ -80,6 +83,7 @@ public class JournalManagePanel extends JPanel {
                     "编辑", "删除"
             });
         }
+        EmptyState.updateEmptyState(tableScroll, table, "暂无期刊");
     }
 
     private void onAdd() {

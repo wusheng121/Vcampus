@@ -72,6 +72,11 @@ public class TimetablePanel extends JPanel {
         courseMap.clear(); lessonMap.clear();
         for (Course c : courses) courseMap.put(c.getCourseId(), c);
         for (Lesson l : lessons) lessonMap.put(l.getLessonId(), l);
+        // 批量预加载上课时间，消除逐 enrollment N+1
+        Map<Integer, List<LessonTime>> timesByLesson = new HashMap<>();
+        for (LessonTime t : controller.listAllLessonTimes()) {
+            timesByLesson.computeIfAbsent(t.getLessonId(), k -> new ArrayList<>()).add(t);
+        }
 
         // 稳定配色（同一门课每次颜色一致）
         Map<Integer, Color> colorCache = new HashMap<>();
@@ -85,7 +90,7 @@ public class TimetablePanel extends JPanel {
             Course course = courseMap.get(lesson.getCourseId());
             String courseName = course == null ? ("课程 " + lesson.getCourseId()) : course.getCourseName();
 
-            List<LessonTime> times = controller.listLessonTimes(enr.getLessonId());
+            List<LessonTime> times = timesByLesson.getOrDefault(enr.getLessonId(), java.util.Collections.emptyList());
             times.sort(Comparator.comparingInt(LessonTime::getDayOfWeek)
                                  .thenComparingInt(LessonTime::getStartSec));
 

@@ -222,7 +222,7 @@ public class ProductDAOImpl implements ProductDAO {
 
 
     public boolean isProductInOrders(String productId) {
-        String sql = "SELECT COUNT(*) FROM order_item WHERE product_id = ?";
+        String sql = "SELECT COUNT(*) FROM order_items WHERE product_id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -263,6 +263,26 @@ public class ProductDAOImpl implements ProductDAO {
     }
 
     @Override
+    public boolean decrementStock(String productId, int quantity) {
+        // 原子扣减：仅当库存足够时才扣减，消除"先查后扣"的 TOCTOU 竞态
+        String sql = "UPDATE product SET stock = stock - ? WHERE product_id = ? AND stock >= ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, quantity);
+            ps.setString(2, productId);
+            ps.setInt(3, quantity);
+
+            return ps.executeUpdate() == 1;
+
+        } catch (SQLException e) {
+            System.err.println("原子扣减库存失败: " + e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
     public List<ProductCategory> findAllCategories() {
         String sql = "SELECT category_id, category_name, description FROM product_categories";
         List<ProductCategory> categories = new ArrayList<>();
@@ -284,6 +304,28 @@ public class ProductDAOImpl implements ProductDAO {
         }
 
         return categories;
+    }
+
+    @Override
+    public ProductCategory getCategoryById(String categoryId) {
+        String sql = "SELECT category_id, category_name, description FROM product_categories WHERE category_id = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, categoryId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    ProductCategory category = new ProductCategory();
+                    category.setCategoryId(rs.getString("category_id"));
+                    category.setCategoryName(rs.getString("category_name"));
+                    category.setDescription(rs.getString("description"));
+                    return category;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("按ID查询分类失败: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override

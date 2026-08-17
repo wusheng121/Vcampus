@@ -52,7 +52,6 @@ public class ConversationMemory {
     }
 
     public Object getHistory() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getHistory'");
+        return getRecentMessages();
     }
 }

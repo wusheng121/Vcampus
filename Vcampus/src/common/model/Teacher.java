@@ -1,5 +1,5 @@
 /**
- * 存放课老师信息
+ * 教师信息
  */
 package common.model;
 import java.io.Serializable;
@@ -7,32 +7,37 @@ import java.io.Serializable;
 public class Teacher implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String teacher_id;
-    private String teacher_name;
+    private String teacherId;
+    private String teacherName;
     private String sex;
     private String subject;
     private String userId;
     private String phone;
     private String email;
     private String address;
-    /* 以及对应的 getter/setter */
 
-    public Teacher() {};
-
-    public String getTeacher_id() {
-        return teacher_id;
+    public Teacher() {
     }
 
-    public void setTeacher_id(String teacher_id) {
-        this.teacher_id = teacher_id;
+    public Teacher(String teacherId, String teacherName) {
+        this.teacherId = teacherId;
+        this.teacherName = teacherName;
     }
 
-    public String getTeacher_name() {
-        return teacher_name;
+    public String getTeacherId() {
+        return teacherId;
     }
 
-    public void setTeacher_name(String teacher_name) {
-        this.teacher_name = teacher_name;
+    public void setTeacherId(String teacherId) {
+        this.teacherId = teacherId;
+    }
+
+    public String getTeacherName() {
+        return teacherName;
+    }
+
+    public void setTeacherName(String teacherName) {
+        this.teacherName = teacherName;
     }
 
     public String getSex() {
@@ -83,25 +88,10 @@ public class Teacher implements Serializable {
         this.address = address;
     }
 
-    public static long getSerialversionuid() {
-        return serialVersionUID;
-    }
-
-    public Teacher(String teacher_id, String teacher_name) {
-        this.teacher_id = teacher_id;
-        this.teacher_name = teacher_name;
-    }
-
-    // getters/setters
-    public String getTeacherId() { return teacher_id; }
-    public void setTeacherId(String teacher_id) { this.teacher_id = teacher_id; }
-
-    public String getTeacherName() { return teacher_name; }
-    public void setTeacherName(String teacher_name) { this.teacher_name = teacher_name; }
-
-    @Override public String toString() {
-        return "Teacher{teacherId=" + teacher_id +
-                ", name='" + teacher_name + '}';
+    @Override
+    public String toString() {
+        return "Teacher{teacherId=" + teacherId +
+                ", name='" + teacherName + '\'' +
+                '}';
     }
 }
-

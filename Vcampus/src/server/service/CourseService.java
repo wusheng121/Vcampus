@@ -5,6 +5,7 @@ import server.dao.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -58,6 +59,16 @@ public class CourseService {
 
     public List<LessonTime> listLessonTimes(int lessonId) {
         return courseDAO.listLessonTimes(lessonId);
+    }
+
+    /** 批量：一次返回全部上课时间，消除逐课 N+1。 */
+    public List<LessonTime> listAllLessonTimes() {
+        return courseDAO.listAllLessonTimes();
+    }
+
+    /** 批量：所有 lesson 的已选人数（lessonId -> count），消除逐课 N+1。 */
+    public Map<Integer, Integer> countEnrolledForAll() {
+        return courseDAO.countEnrolledForAll();
     }
 
     public List<Enrollment> listEnrollmentsByStudent(String studentId) {
@@ -227,7 +238,15 @@ public Result deleteLesson(int lessonId) {
 
     // ========== 退课 ==========
     public Result drop(String studentId, int lessonId) {
-        // TODO: 可以先简单直接退课；若需加“截至时间”等规则，后续再扩展
+        Lesson lesson = courseDAO.getLessonById(lessonId);
+        if (lesson == null) {
+            return Result.fail("课程不存在");
+        }
+        // 退课时间窗：已过选课截止时间(enroll_end)则禁止退课，与选课截止规则一致
+        java.util.Date end = lesson.getEnrollEnd();
+        if (end != null && new java.util.Date().after(end)) {
+            return Result.fail("退课时间已截止（已过选课截止时间）");
+        }
         boolean ok = enrollmentDAO.drop(studentId, lessonId);
         return ok ? Result.ok() : Result.fail("退课失败（可能未选该课或数据库执行失败）");
     }

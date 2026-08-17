@@ -1,4 +1,5 @@
 package client.controller;
+import common.net.MessageType;
 
 import client.net.ClientSocket;
 import client.ui.LoginFrame;
@@ -13,7 +14,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class OrderController {
-    private final ClientSocket clientSocket = new ClientSocket();
+    private final ClientSocket clientSocket = ClientSocket.getInstance();
     private User currentUser;
 
     /**
@@ -40,7 +41,7 @@ public class OrderController {
             }
 
             Message request = new Message();
-            request.setType("createOrder");
+            request.setType(MessageType.CREATE_ORDER);
             request.setData(items);
             request.setExtra(currentUser); // 传递当前用户
 
@@ -68,7 +69,7 @@ public class OrderController {
             System.out.println("[DEBUG] 获取用户订单 - 当前用户: " + currentUser.getUserId());
 
             Message request = new Message();
-            request.setType("getUserOrders");
+            request.setType(MessageType.GET_USER_ORDERS);
             request.setData(currentUser); // 传递整个用户对象
 
             Message response = clientSocket.sendRequest(request);
@@ -103,7 +104,7 @@ public class OrderController {
             }
 
             Message request = new Message();
-            request.setType("getAllOrders");
+            request.setType(MessageType.GET_ALL_ORDERS);
             request.setData(currentUser);
 
             Message response = clientSocket.sendRequest(request);
@@ -132,7 +133,7 @@ public class OrderController {
             Objects.requireNonNull(orderId, "订单ID不能为null");
 
             Message request = new Message();
-            request.setType("getOrderDetail");
+            request.setType(MessageType.GET_ORDER_DETAIL);
             request.setData(orderId);
 
             Message response = clientSocket.sendRequest(request);
@@ -164,7 +165,7 @@ public class OrderController {
             Objects.requireNonNull(status, "状态不能为null");
 
             Message request = new Message();
-            request.setType("updateOrderStatus");
+            request.setType(MessageType.UPDATE_ORDER_STATUS);
             request.setData(orderId);
             request.setExtra(new String[]{status, currentUser.getType()});
 
@@ -194,7 +195,7 @@ public class OrderController {
             validateCurrentUser(); // 确保用户已登录
 
             Message request = new Message();
-            request.setType("isProductInOrders");
+            request.setType(MessageType.IS_PRODUCT_IN_ORDERS);
             request.setData(productId);
             request.setExtra(currentUser); // 传递当前用户信息
 
@@ -223,7 +224,7 @@ public class OrderController {
             Objects.requireNonNull(orderId, "订单ID不能为null");
 
             Message request = new Message();
-            request.setType("deleteOrder");
+            request.setType(MessageType.DELETE_ORDER);
             request.setData(orderId);
             request.setExtra(currentUser); // 传递当前用户信息
 
@@ -283,7 +284,7 @@ public class OrderController {
         try {
             // 1. 准备请求
             Message request = new Message();
-            request.setType("cancelOrder");
+            request.setType(MessageType.CANCEL_ORDER);
             request.setData(orderId);
             request.setExtra(new String[]{
                     currentUser.getUserId(),
@@ -324,7 +325,7 @@ public class OrderController {
             }
 
             Message request = new Message();
-            request.setType("payOrder");
+            request.setType(MessageType.PAY_ORDER);
             request.setData(orderId);
             request.setExtra(new String[]{
                     currentUser.getUserId(),

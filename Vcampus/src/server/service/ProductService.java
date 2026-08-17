@@ -157,6 +157,10 @@ public class ProductService {
         return productDAO.findAllCategories();
     }
 
+    public ProductCategory getCategoryById(String categoryId) {
+        return productDAO.getCategoryById(categoryId);
+    }
+
     public List<Product> getProductsByCategory(String categoryId) {
         return productDAO.findProductsByCategory(categoryId);
     }
